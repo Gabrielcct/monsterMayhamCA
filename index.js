@@ -20,8 +20,20 @@ app.set("view engine", "ejs");
 // put in public folder by joining current tirectory with public
 app.use(express.static(path.join(__dirname, 'public')));
 
+// generate 10x10 board
+const startingBoard = [];
+
+for (let i = 0; i < 10; i++) {
+    const row = []; // create row
+    for (let j = 0; j < 10; j++) {
+        row.push(null); // push null for every column
+    }
+    // add rows to startingBoard array
+    startingBoard.push(row);
+}
+
 app.get("/", (req, res) => {
-    res.render("index.ejs", { __dirname} );
+    res.render("index.ejs", { board: startingBoard} );
 });
 
 // Listen on port 3000
