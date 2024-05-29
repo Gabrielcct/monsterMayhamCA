@@ -20,6 +20,7 @@ wsServer.onclose = () => {
 // get game board
 const gameBoard = document.getElementById("gameBoard");
 
+let clientPlayer = null;
 let currentPlayer = null; // set variable for current player. initially is null
 let isGameStarted = false; // checks if game started
 let isGameOver = false; // check if game finished
@@ -32,23 +33,28 @@ wsServer.onmessage = (event) => {
     // based on message type do different things
     switch(data.type){
         case 'updateBoard':
+                console.log('Board updated'); // log that game board is updated with new data.board
+                createBoard(data.board); // update game board is updated with new data.board
+                break;
         case 'startGame':
-                // if type is either upddateBoard or start game 
-                // send new board to createBoard method and update it
-                createBoard(data.board);
-                // if is start game set current player
-                if(data.type === 'startGame') {
-                    currentPlayer = data.player;
-                }
-                break;   
+                console.log('Game started');  // log that game started
+                currentPlayer = data.player || clientPlayer; // if is start game set current player
+                createBoard(data.board); // update board
+                isGameStarted = true;
+                // Display a message indicating whose turn it is
+                displayMessage(`It's ${currentPlayer}'s turn`);
+                break;
         case 'nextTurn':
-            // if type sent is next turn and if player is current player
-            if (data.player === currentPlayer) {
-                // display alert to current player that it is his turn
-                alert("It's your turn!");
-            }
-            break;
-        default: return;
+                console.log(`It's ${data.player}'s turn`);
+                // Display a message indicating whose turn it is
+                displayMessage(`It's ${data.player}'s turn`);
+                break;
+        case 'nextMonster':
+                console.log(`Place your next monster`);
+                // Display a message prompting the player to place their next monster
+                displayMessage(`Place your next monster`);
+                break;
+        default: break;
     }
 };
 
@@ -59,10 +65,10 @@ wsServer.onmessage = (event) => {
  */
 function startGame(){
     // enter name on start of game
-    const player = prompt("Enter your player name:");
+    clientPlayer = prompt("Enter your player name:");
     isGameStarted = true; // set game started to true
     // set data to be json with startGame type and set player 
-    const data = JSON.stringify({ type: 'startGame', player })
+    const data = JSON.stringify({ type: 'startGame', clientPlayer });
     // send data to websocket
     wsServer.send(data);
 }
@@ -122,4 +128,15 @@ function createBoard(board) {
         });
         gameBoard.appendChild(rowDiv);
     });
+}
+
+/**
+ * Function to display message which player is playing
+ * @param {*} message -- message to be displayed
+ */
+function displayMessage(message) {
+    const messageElement = document.createElement('div');
+    messageElement.textContent = message;
+    // Assuming you have a message container with id "message-container"
+    document.getElementById('message-container').appendChild(messageElement);
 }
