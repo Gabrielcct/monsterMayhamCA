@@ -4,6 +4,7 @@ const express = require("express");// use express package
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const path = require('path');
+const http = require('http');
 const WebSocket = require('ws');
 
 //const PORT = (3000); //use port 3000
@@ -20,21 +21,54 @@ app.set("view engine", "ejs");
 // put in public folder by joining current tirectory with public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// generate 10x10 board
-const startingBoard = [];
+// VARIABLES FOR GAME
+let gamesPlayed = 0;
+let playersStats = {};
+let startingBoard = createBoard();
+// Create HTTP server and WebSocket server
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-for (let i = 0; i < 10; i++) {
-    const row = []; // create row
-    for (let j = 0; j < 10; j++) {
-        row.push(null); // push null for every column
+// FUNCTIONS
+/**
+ * Function to create board
+ * Added to function as it sets data to null so it can be used as reset
+ */
+function createBoard(){
+    const startingBoard = [];
+    // generate 10x10 board
+    for (let i = 0; i < 10; i++) {
+        const row = []; // create row
+        for (let j = 0; j < 10; j++) {
+            row.push(null); // push null for every column
+        }
+        // add rows to startingBoard array
+        startingBoard.push(row);
     }
-    // add rows to startingBoard array
-    startingBoard.push(row);
+    return startingBoard;
 }
 
+
+/**
+ * Function to set initial player stats 
+ */
+function initializePlayer(player) {
+    
+        playersStats[player] = {
+            gamesWon: 0,
+            gamesLost: 0
+        };
+    
+}
+
+// SET UP ROUTES
 app.get("/", (req, res) => {
-    res.render("index.ejs", { board: startingBoard} );
+    res.render("index.ejs", { board: startingBoard, gamesPlayed, playersStats} );
 });
+
+
+
+
 
 // Listen on port 3000
 app.listen(PORT, () => {
