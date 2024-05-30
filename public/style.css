@@ -17,3 +17,39 @@ body {
     align-items: center;
     cursor: pointer;
 }
+
+#player-list ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+#player-list li {
+    font-weight: normal;
+    padding: 5px;
+}
+
+#player-list li.playing {
+    color: green;
+    font-weight: bold;
+}
+
+#player-list li.waiting {
+    color: red;
+}
+
+/* Define custom colors for each player */
+#player-list li.player1 {
+    color: blue;
+}
+
+#player-list li.player2 {
+    color: orange;
+}
+
+#player-list li.player3 {
+    color: purple;
+}
+
+#player-list li.player4 {
+    color: teal;
+}

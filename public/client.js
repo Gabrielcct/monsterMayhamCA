@@ -20,11 +20,10 @@ wsServer.onclose = () => {
 // get game board
 const gameBoard = document.getElementById("gameBoard");
 
-let clientPlayer = null;
 let currentPlayer = null; // set variable for current player. initially is null
 let isGameStarted = false; // checks if game started
 let isGameOver = false; // check if game finished
-
+let playersStats = [];
 // EVENTS
 // This will handle web socket messages (events)
 wsServer.onmessage = (event) => {
@@ -36,14 +35,14 @@ wsServer.onmessage = (event) => {
                 console.log('Board updated'); // log that game board is updated with new data.board
                 createBoard(data.board); // update game board is updated with new data.board
                 break;
-        case 'startGame':
+       /* case 'startGame':
                 console.log('Game started');  // log that game started
                 currentPlayer = data.player || clientPlayer; // if is start game set current player
                 createBoard(data.board); // update board
                 isGameStarted = true;
                 // Display a message indicating whose turn it is
                 displayMessage(`It's ${currentPlayer}'s turn`);
-                break;
+                break;*/
         case 'nextTurn':
                 console.log(`It's ${data.player}'s turn`);
                 // Display a message indicating whose turn it is
@@ -53,6 +52,11 @@ wsServer.onmessage = (event) => {
                 console.log(`Place your next monster`);
                 // Display a message prompting the player to place their next monster
                 displayMessage(`Place your next monster`);
+                break;
+        case 'updatePlayerList':
+                playersStats = data.players;
+                updatePlayerList(playersStats);
+                
                 break;
         default: break;
     }
@@ -65,10 +69,11 @@ wsServer.onmessage = (event) => {
  */
 function startGame(){
     // enter name on start of game
-    clientPlayer = prompt("Enter your player name:");
+    const player = prompt("Enter your player name:");
     isGameStarted = true; // set game started to true
+    console.log(player)
     // set data to be json with startGame type and set player 
-    const data = JSON.stringify({ type: 'startGame', clientPlayer });
+    const data = JSON.stringify({ type: 'startGame', player });
     // send data to websocket
     wsServer.send(data);
 }
@@ -139,4 +144,21 @@ function displayMessage(message) {
     messageElement.textContent = message;
     // Assuming you have a message container with id "message-container"
     document.getElementById('message-container').appendChild(messageElement);
+}
+
+
+// Function to update player list
+function updatePlayerList(players) {
+    const playerListElement = document.getElementById('player-list').getElementsByTagName('ul')[0];
+    // Clear existing player list HTML
+    playerListElement.innerHTML = '';
+    // Create new HTML elements for each player
+    // Reference https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
+    players.forEach(player => {
+        debugger
+        const playerItem = document.createElement('li');
+        playerItem.textContent = player.name;
+        playerItem.classList.add(player.status);
+        playerListElement.appendChild(playerItem);
+    });
 }

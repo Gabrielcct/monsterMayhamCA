@@ -6,16 +6,14 @@ const ejs = require("ejs");
 const path = require('path');
 const WebSocket = require('ws');
 
+// IMPORTS
+const { gameState, initializePlayer } = require('./game/gameState');
+const { broadcastToAllClients } = require('./game/utility');
+
 //const PORT = (3000); //use port 3000
 // either use port 3000 or process.argv[2] from command line specify
 const PORT = (process.argv[2] || 3000);
-// Define which sides of the grid belong to each player
-const PLAYER_SIDES = {
-    'Player1': 'top',
-    'Player2': 'bottom',
-    'Player3': 'left',
-    'Player4': 'right'
-};
+
 // assign app to express - create app
 app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -29,12 +27,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // VARIABLES FOR GAME
 let gamesPlayed = 0;
 let playersStats = {}; // { playerName: { wins: 0, losses: 0 } }
-// keep current game state in object
-const gameState = {
-    board: createBoard(), // creat starting board
-    players: {},  // Stores player names and their respective sides of the grid
-    monstersCount: {} // Stores the count of monsters for each player
-};
+
 
 // Listen on port and assign server to httpServer
 const httpServer = app.listen(PORT, () => {
@@ -52,37 +45,16 @@ httpServer.on('upgrade', async (request, socket, head) => {
 });
 
 // FUNCTIONS
-/**
- * Function to create board
- * Added to function as it sets data to null so it can be used as reset
- */
-function createBoard(){
-    const startingBoard = [];
-    // generate 10x10 board
-    for (let i = 0; i < 10; i++) {
-        const row = []; // create row
-        for (let j = 0; j < 10; j++) {
-            row.push(null); // push null for every column
-        }
-        // add rows to startingBoard array
-        startingBoard.push(row);
-    }
-    return startingBoard;
-}
-
-
-/**
- * Function to set initial player stats 
- */
-function initializePlayer(player) {
-    // check first if that player no exist before reseting
+function initializePlayerStats(player) {
+    // check first if that player no exist before resetting
     if (!playersStats[player]) {
         playersStats[player] = {
-            gamesWon: 0,
-            gamesLost: 0
+            gamesWon: 0, // Initialize games won for the player
+            gamesLost: 0, // Initialize games lost for the player
         };
     }
 }
+
 
 // SET UP ROUTES
 app.get("/", (req, res) => {
@@ -95,7 +67,7 @@ wsServer.on('connection', (ws) => {
     // On first connection
     // log that user connected
     console.log('A user connected');
-
+    
     // SEND INITIAL DATA
     // set initial data as json, type of message is init, and send gameBoard, number of games played and player statistic
    // const initData = JSON.stringify({ type: 'init', board: gameState.board, gamesPlayed, playersStats });
@@ -114,12 +86,21 @@ wsServer.on('connection', (ws) => {
                     // update game state with player
                     //gameState.players.push(data.player);   
                      // Assign player to a side of the grid
-                    gameState.players[data.player] = PLAYER_SIDES[data.player];
+                    console.log(data.player)
+                    //gameState.players[data.player] = PLAYER_SIDES[data.player];
                     // Initialize monsters count for the player
-                    gameState.monstersCount[data.player] = 0; 
+                    //gameState.monstersCount[data.player] = 0; 
+                    // Initialize player 
+                    initializePlayer(data.player);
+                    // init player stats
+                    initializePlayerStats(data.player);
                     // send start data as json
-                    const startData = JSON.stringify({ type: 'startGame', player: data.player, board: gameState.board });
-                    ws.send(startData);
+                    //const startData = JSON.stringify({ type: 'startGame', player: data.player, board: gameState.board });
+                    //ws.send(startData);
+
+                    // Broadcast the updated player list to all clients
+                    const playerListData = JSON.stringify({ type: 'updatePlayerList', players: gameState.players });
+                    broadcastToAllClients(playerListData);
                     break;
             case 'placeMonster': 
                     console.log('place monster'); // log that we are at placing monster
@@ -149,14 +130,8 @@ wsServer.on('connection', (ws) => {
                             });
                         }
                         // Broadcast the updated board to all clients
-                        wsServer.clients.forEach(client => {
-                            // if they have open connection
-                            if (client.readyState === WebSocket.OPEN) {
-                                // send updated board
-                                const updatedBoard = JSON.stringify({ type: 'updateBoard', board: gameState.board });
-                                client.send(updatedBoard);
-                            }
-                        });
+                        const updatedBoard = JSON.stringify({ type: 'updateBoard', board: gameState.board });
+                        broadcastToAllClients(updatedBoard);
                     }
                     
                     
@@ -182,6 +157,7 @@ wsServer.on('connection', (ws) => {
         // log that user disconnected
         console.log('A user disconnected');
     });
+
 });
 
 function getPlayerWithFewestMonsters() {
@@ -206,5 +182,8 @@ function getPlayerWithFewestMonsters() {
         return playersWithMinCount[0];
     }
 }
+
+
+
 
 

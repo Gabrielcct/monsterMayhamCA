@@ -13,6 +13,14 @@
     </div>
 </div>
 
+<div id="player-list">
+    <ul>
+        <% for (let player in playersStats) { %>
+            <li class="<%= player.status %>"><%= player.name %></li>
+        <% } %>
+    </ul>
+</div>
+
 <div>
     <button id="startGame" class="btn btn-primary" onclick="startGame()">Start Game</button>
     <button id="placeMonster" class="btn btn-secondary" onclick="placeMonster()">Place Monster</button>
