@@ -2,11 +2,13 @@
 <h1>Monster Mayhem</h1>
 <br/>
 <br/>
-<h2>Game name : <%= gameState.name %></h2>
+<h2>Game name : <%= gameName %></h2>
+<h2> Welcome <%= playerName %></h2>
 
 <div id="player-list">
     <ul>
-        <% for (let player in gameState.players) { %>
+        <% for (let playerName in games[gameName].players) { %>
+            <% let player = games[gameName].players[playerName]; %>
             <li class="<%= player.status %>"><%= player.name %> status: <%= player.status %></li>
         <% } %>
     </ul>
@@ -19,7 +21,7 @@
 
 <div id="gameBoard">
     
-    <% gameState.board.forEach((row, rowIndex) => { %>
+    <% games[gameName].board.forEach((row, rowIndex) => { %>
         <!-- Each row -->
         <div class="board-row">
             <% row.forEach((cell, colIndex) => { %>
@@ -31,7 +33,21 @@
         </div>
     <% }) %>
 </div>
-
+<!-- to display monster info-->
+<div id="monsters-container">
+    <!-- To select monster type -->
+    <div id="monsters-placment" class="monster-placment"></div> 
+    <!-- To select monster type -->
+    <div id="monsters-info" class="monster-info"></div> 
+    <!-- To select monster type -->
+    <div id="monsters-types" class="monster-types"></div> 
+</div>
+ 
 <div id="message-container"></div> 
+<script>
+   
+   // console.log(playerMonsters);
+</script>
 <script src="/client.js"></script>
+
 <%- include("../partials/footer.ejs") -%>

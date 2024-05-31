@@ -1,42 +1,54 @@
 <%- include("../partials/head.ejs") -%>
+<!-- Title -->
 <h1>Monster Mayhem</h1>
 <br/>
 <br/>
 
-<h2>Games in progres</h2>
+<!-- Games that are played -->
 <div class="played-games">
-    <% if(games &&games.length === 0) { %>
-        
-        <p>no games in progress</p>
-        <button class="btn btn-primary" onclick="startNewGame()">Start New Game</button>
-    <% } else { %>
-        <ul class="list">
-        <% for (let game of games) { %>
-            <li class="li"><%= game.name %>: 
-                <span class="players">Players <%= game.players.length %>/4</span>
-                <% if(game && game.players && game.players.length < 4) { %>
-                    <button class="btn btn-primary" onclick="joinGame('<%=game.name%>')">Join Game</button>
-                <% } else { %>
-                    <span class="full-game">Game is full</span>
-                <% } %>    
-            </li>    
+    <!-- Check if there is games object-->
+    <% if(games) { %>
+        <!-- If Games object has properties -->
+        <% if (Object.keys(games).length > 0) { %>
+            <!-- Display title for games list -->
+            <h2>Games in progres: </h2>
+            <!-- Display list of all games -->
+            <ul class="list">
+                <% for (let gameName in games) { %>
+                    <!-- each game in games-->
+                    <li>
+                        <!-- Game name and number of current players / maximum players-->
+                        <strong>Game Name:</strong> <%= gameName %> --- <span class="players"><%= gameName.currentPlayers %> / <%= gameName.maxPlayers %></span>
+                        <!-- List players -->
+                        <strong>Players:</strong>
+                        <ul class="inside-list">
+                            <% for (let playerName in games[gameName].players) { %>
+                                <!-- display player name for each player in games-->
+                                <li><%= playerName %>: <%= JSON.stringify(games[gameName].players[playerName]) %></li>
+                            <% } %>
+                        </ul> 
+                        <!-- if there is available slots to join game -->
+                        <% if(gameName.currentPlayers < 4) { %>
+                            <!-- show join game button -->
+                            <button class="btn btn-primary" onclick="joinGame('<%=gameName%>')">Join Game</button>
+                        <% } else { %>
+                            <!-- if no display messasage game is full -->
+                            <span class="full-game">Game is full</span>
+                        <% } %> 
+                    </li>    
+                <% } %>
+            </ul>
+        <% } else { %>
+            <!-- else there are no games in progress -->
+            <h2> No games currently in progress</h2>
         <% } %>
-        </ul>
-    <% }%>
+    <% } %>   
 </div>
+
+<!-- option to create new game -->
 <div class="new-game">
     <button class="btn btn-primary" onclick="startNewGame()">Create New Game</button>
 </div>
 
-<div class="player-statistic">
-    <p>Games Played: <%= gamesPlayed %></p>
-    <div>
-        <h2>Player Stats</h2>
-        <% for (let player in playersStats) { %>
-            <p><%= player %>: <%= playersStats[player].gamesWon %> wins</p>
-            <p><%= player %>: <%= playersStats[player].gamesLost %> lose</p>
-        <% } %>
-    </div>
-</div>
 <script src="/client-index.js"></script>
 <%- include("../partials/footer.ejs") -%>

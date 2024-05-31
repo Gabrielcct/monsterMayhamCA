@@ -3,19 +3,10 @@
 const url = "ws://localhost:3000";
 const wsServer = new WebSocket(url);
 
-// TRACK WEB SOCKET SERVER 
-wsServer.onopen = () => {
-    console.log('Connected to WebSocket server');
-};
 
-wsServer.onerror = (error) => {
-    console.log('WebSocket error:', error);
-    console.log('WebSocket error:', error.message);
-};
-
-wsServer.onclose = () => {
-    console.log('WebSocket connection closed');
-};
+const data = JSON.stringify({ type: 'get-game-init'});
+// send data to websocket
+wsServer.send(data);
 
 // get game board
 const gameBoard = document.getElementById("gameBoard");
@@ -23,10 +14,9 @@ const gameBoard = document.getElementById("gameBoard");
 let currentPlayer = null; // set variable for current player. initially is null
 let isGameStarted = false; // checks if game started
 let isGameOver = false; // check if game finished
-let playersStats = [];
 
 let gamesList = [];
-
+let monsters = []
 
 // EVENTS
 // This will handle web socket messages (events)
@@ -35,6 +25,14 @@ wsServer.onmessage = (event) => {
     const data = JSON.parse(event.data);
     // based on message type do different things
     switch(data.type){
+        case 'initGame':
+                console.log('Game initialised');
+                console.log(data);
+                monsters = data.playerMonsters;
+                currentPlayer = data.playerName;
+                isGameStarted = true;
+                updateMonstersDiv(monsters);
+                break;
         case 'updateBoard':
                 console.log('Board updated'); // log that game board is updated with new data.board
                 createBoard(data.board); // update game board is updated with new data.board
@@ -168,3 +166,97 @@ function updatePlayerList(players) {
 }
 
 
+// MONSTER LOGIC
+// monster divs
+const monsterPlacement = document.getElementById('monster-placement');
+const monsterInfo = document.getElementById('monsters-info');
+const monsterTypesDiv = document.getElementById('monster-types');
+// butons to place monster
+const placeMonsterButton = createElement('button', 'btn btn-primary', 'Place Monster', placeMonster);
+const cancelPlaceMonsterButton = createElement('button', 'btn btn-secondary', 'Cancel Placing Monster', cancelPlacingMonster);
+// monster information divs
+const availableMonstersDiv = createElement('div', 'available-monsters', null, null);
+const availableMonstersLabel = createElement('span', 'available-monsters-label', 'Available monsters to place: ');
+const availableMonstersCount = document.createTextNode(monsters.filter(monster => monster.location == null).length);
+// monster types selection buttons
+const vampireButton = createElement('button', 'btn btn-vampire', 'Vampire', addVampire);
+const warewolfButton = createElement('button', 'btn btn-warewolf', 'Warewolf', addWarewolf);
+const ghostButton = createElement('button', 'btn btn-ghost', 'Ghost', addGhost);
+   
+
+function updateMonstersDiv(monsters){
+    const availableMonsters = monsters.filter(monster => monster.location == null).length;
+    // clear content
+    monsterPlacement.innerHTML = '';
+    // if there are monsters that can be placed on board
+    if(availableMonsters){
+        // append place monster button
+        monsterPlacement.appendChild(placeMonsterButton);
+    }
+    // append monster information
+    availableMonstersDiv.innerHTML = ''; // clear content
+    availableMonstersDiv.appendChild(availableMonstersLabel);
+    availableMonstersDiv.appendChild(document.createTextNode(availableMonsters));
+    monsterInfo.appendChild(cancelPlaceMonsterButton);
+}
+ 
+function placeMonster(){
+    // clear content
+    monsterPlacement.innerHTML = '';
+    // append cancel placing monster button
+    monsterPlacement.appendChild(placeMonsterButton);
+    // append place monster type divs so we can select monster
+    monsterTypesDiv.appendChild(vampireButton);
+    monsterTypesDiv.appendChild(warewolfButton);
+    monsterTypesDiv.appendChild(ghostButton);
+}
+
+function cancelPlacingMonster(){
+    // clear content
+    monsterPlacement.innerHTML = '';
+    // append back place monster button
+    monsterPlacement.appendChild(placeMonsterButton);
+    // clear monster types buttons
+    monsterTypesDiv.innerHTML = '';
+}
+
+function addVampire(){
+    const data = JSON.stringify({ type: 'place-vampire', playerName});
+    wsServer.send(data);
+}
+
+function addWarewolf(){
+    const data = JSON.stringify({ type: 'place-warewolf', playerName});
+    wsServer.send(data);
+}
+
+function addGhost(){
+    const data = JSON.stringify({ type: 'place-ghost', playerName});
+    wsServer.send(data);
+}
+
+function createElement(type, classNames, textContent, onClick){
+    const el = document.createElement(type);
+    el.className = classNames;
+    el.textContent = textContent;
+    // if is button set click function
+    if(type=='button'){
+        el.onclick = onClick;
+    }
+    return el;
+ }
+
+ 
+// TRACK WEB SOCKET SERVER 
+wsServer.onopen = () => {
+    console.log('Connected to WebSocket server');
+};
+
+wsServer.onerror = (error) => {
+    console.log('WebSocket error:', error);
+    console.log('WebSocket error:', error.message);
+};
+
+wsServer.onclose = () => {
+    console.log('WebSocket connection closed');
+};

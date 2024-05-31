@@ -1,4 +1,5 @@
 const express = require("express");// use express package
+const session = require('express-session'); // for sessions
 // body parser middleware 
 // Reference: https://www.npmjs.com/package/body-parser
 const bodyParser = require("body-parser");
@@ -7,8 +8,9 @@ const path = require('path');
 const WebSocket = require('ws');
 
 // IMPORTS
-const { startNewGame, joinExistingGame, getGameStateFromGames, getAllGames, games } = require('./game/gamesManager'); // Update the path if necessary
+const { startNewGame, joinExistingGame, games } = require('./game/gamesManager'); // Update the path if necessary
 const { broadcastToAllClients } = require('./game/utility');
+const { MONSTER_STATUS, MONSTER_TYPE} = require('./game/monsters');
 
 //const PORT = (3000); //use port 3000
 // either use port 3000 or process.argv[2] from command line specify
@@ -23,10 +25,17 @@ app.set("view engine", "ejs");
 
 // put in public folder by joining current tirectory with public
 app.use(express.static(path.join(__dirname, 'public')));
+// set session details
+app.use(session({
+    secret: 'secret', // Replace with a strong secret key
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } 
+}));
 
 // VARIABLES FOR GAME
-let gamesPlayed = 0;
-let playersStats = {}; // { playerName: { wins: 0, losses: 0 } }
+//let gamesPlayed = 0;
+//let playersStats = {}; // { playerName: { wins: 0, losses: 0 } }
 
 
 // Listen on port and assign server to httpServer
@@ -44,146 +53,55 @@ httpServer.on('upgrade', async (request, socket, head) => {
     });
 });
 
-// FUNCTIONS
-function initializePlayerStats(player) {
-    // check first if that player no exist before resetting
-    if (!playersStats[player]) {
-        playersStats[player] = {
-            gamesWon: 0, // Initialize games won for the player
-            gamesLost: 0, // Initialize games lost for the player
-        };
-    }
-}
-
-
 // SET UP ROUTES
 app.get("/", (req, res) => {
-    res.render("index.ejs", { games:getAllGames(), gamesPlayed, playersStats} );
+    res.render("index.ejs", { games } );
 });
 
-app.get("/game/:name", (req, res) => {
-    let gameState = getGameStateFromGames(req.params.name);
-    res.render("game.ejs", { gameState, gamesPlayed, playersStats} );
+app.get("/game/:name/:playerName", (req, res) => {
+    req.session.gameName = req.params.name; // save game name to session
+    req.session.playerName = req.params.playerName; // save player name to session
+    const playerName = req.session.playerName;
+    const gameName = req.session.gameName;
+    res.render("game.ejs", { games, gameName, playerName, playerMonsters: games[gameName].players[playerName].monsters} );
 });
 
-// WEBSOCKET CONNECTIONS
-// make a connection
+
+// WEBSOCKET - make a connection
 wsServer.on('connection', (ws) => {
-    // On first connection
     // log that user connected
     console.log('A user connected');
     
-    // SEND INITIAL DATA
-    // set initial data as json, type of message is initialData, and send games, number of games played and player statistic
-    ws.send(JSON.stringify({ type: 'initialData', games: getAllGames(), gamesPlayed, playersStats }));
-    //ws.send(initData); // send init data
-
-    // HANDLE MESSAGES
+    // SEND INITIAL DATA to index
+    const initialData = JSON.stringify({ type: 'initial-data', games, });
+    ws.send(initialData);
+    
+    // HANDLE WEB SOCKET MESSAGES
     ws.on('message', (message) => {
-        // log message that was received
-        console.log('Received:', message);
-        // pars the message json and save as data
-        const data = JSON.parse(message);
-        // handle different types of messages
+        const data = JSON.parse(message); // parse the message json and save as data
+        
+        // handle different types of messages by switching on type
         switch(data.type){
-            case 'startNewGame':
-                    console.log('***** starting New game:'); // log that we are at start game
-                    console.log('-playerName: '+data.playerName);
-                    console.log('-gameName:' +data.gameName);
-                    startNewGame(data.gameName, data.playerName);
-                    // send that new game started and game name
-                    const newGameStartedData = JSON.stringify({ type: 'newGameStarted', gameName: data.gameName })
+            case 'start-new-game':
+                    const newGames = startNewGame(data.gameName, data.playerName);
+                    const newGameStartedData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games:newGames })
                     ws.send(newGameStartedData);
                     break;
-            case 'joinExistingGame':
-                    console.log('***** Joining existing game'); // log that we are at start game
-                    console.log('playerName', data.playerName)
-                    console.log('gameState', data.gameState)
-                    let updatedGameState = joinExistingGame(data.gameState, data.playerName);
+            case 'join-game':
+                    const updatedGames = joinExistingGame(data.gameName, data.playerName);
                     // send that new game started and game name
-                    const joinGameStartedData = JSON.stringify({ type: 'joinedGame', gameName: updatedGameState.name })
+                    const joinGameStartedData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games:updatedGames })
                     ws.send(joinGameStartedData);
-                    break;
-            case 'placeMonster': 
-                    console.log('place monster'); // log that we are at placing monster
-                    const player = data.player; // set player
-                    const monsterType = data.monster; // set monsterType
-                    // Validate player action to ensure they are placing the monster on their own edge
-                    if (gameState.players[player] === PLAYER_SIDES[player]) {
-                        // Update the board if the action is valid
-                        gameState.board[data.row][data.col] = { type: monsterType, player: player };
-                        gameState.monstersCount[player]++; // Increment the monsters count for the player
-                        // Check if the player has placed all their monsters
-                        if (gameState.monstersCount[player] >= 10) {
-                            // Determine the next player
-                            const nextPlayer = getPlayerWithFewestMonsters();
-                            // Notify the next player that it's their turn
-                            wsServer.clients.forEach(client => {
-                                if (client.readyState === WebSocket.OPEN && gameState.players[nextPlayer] === PLAYER_SIDES[nextPlayer]) {
-                                    client.send(JSON.stringify({ type: 'nextTurn' }));
-                                }
-                            });
-                        }else {
-                            // If there are remaining monsters to place, notify the current player to continue their turn
-                            wsServer.clients.forEach(client => {
-                                if (client.readyState === WebSocket.OPEN && gameState.players[data.player] === PLAYER_SIDES[data.player]) {
-                                    client.send(JSON.stringify({ type: 'nextMonster' }));
-                                }
-                            });
-                        }
-                        // Broadcast the updated board to all clients
-                        const updatedBoard = JSON.stringify({ type: 'updateBoard', board: gameState.board });
-                        broadcastToAllClients(updatedBoard);
-                    }
-                    
-                    
-                    break;
-            case 'endTurn': 
-                    console.log('end turn');
-                    // Determine the player with the fewest monsters and notify them to take their turn
-                    const nextPlayer = getPlayerWithFewestMonsters();
-                    wsServer.clients.forEach(client => {
-                        if (client.readyState === WebSocket.OPEN && gameState.players[nextPlayer] === PLAYER_SIDES[nextPlayer]) {
-                            client.send(JSON.stringify({ type: 'nextTurn', player: nextPlayer }));
-                        }
-                    });
-                    break;
             default: return;
         }
     });
 
-
-    // HANDLE DISCONNECT
-    // When connection closes
+    // HANDLE DISCONNECT - When connection closes
     ws.on('close', () => {
-        // log that user disconnected
         console.log('A user disconnected');
     });
-
 });
 
-function getPlayerWithFewestMonsters() {
-    let minCount = Infinity;
-    let playersWithMinCount = [];
-
-    // Find the player(s) with the fewest monsters
-    for (const player in gameState.monstersCount) {
-        if (gameState.monstersCount[player] < minCount) {
-            minCount = gameState.monstersCount[player];
-            playersWithMinCount = [player];
-        } else if (gameState.monstersCount[player] === minCount) {
-            playersWithMinCount.push(player);
-        }
-    }
-
-    // If there's a tie, randomly select one of the players
-    if (playersWithMinCount.length > 1) {
-        const randomIndex = Math.floor(Math.random() * playersWithMinCount.length);
-        return playersWithMinCount[randomIndex];
-    } else {
-        return playersWithMinCount[0];
-    }
-}
 
 
 
