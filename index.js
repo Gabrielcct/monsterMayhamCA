@@ -7,7 +7,7 @@ const path = require('path');
 const WebSocket = require('ws');
 
 // IMPORTS
-const { gameState, initializePlayer } = require('./game/gameState');
+const { startNewGame, joinExistingGame, getGameStateFromGames, getAllGames, games } = require('./game/gamesManager'); // Update the path if necessary
 const { broadcastToAllClients } = require('./game/utility');
 
 //const PORT = (3000); //use port 3000
@@ -58,7 +58,12 @@ function initializePlayerStats(player) {
 
 // SET UP ROUTES
 app.get("/", (req, res) => {
-    res.render("index.ejs", { board: gameState.board, gamesPlayed, playersStats} );
+    res.render("index.ejs", { games, gamesPlayed, playersStats} );
+});
+
+app.get("/game/:name", (req, res) => {
+    let gameState = getGameStateFromGames(req.params.name);
+    res.render("game.ejs", { gameState, gamesPlayed, playersStats} );
 });
 
 // WEBSOCKET CONNECTIONS
@@ -69,8 +74,8 @@ wsServer.on('connection', (ws) => {
     console.log('A user connected');
     
     // SEND INITIAL DATA
-    // set initial data as json, type of message is init, and send gameBoard, number of games played and player statistic
-   // const initData = JSON.stringify({ type: 'init', board: gameState.board, gamesPlayed, playersStats });
+    // set initial data as json, type of message is initialData, and send games, number of games played and player statistic
+    ws.send(JSON.stringify({ type: 'initialData', games: getAllGames(), gamesPlayed, playersStats }));
     //ws.send(initData); // send init data
 
     // HANDLE MESSAGES
@@ -81,26 +86,23 @@ wsServer.on('connection', (ws) => {
         const data = JSON.parse(message);
         // handle different types of messages
         switch(data.type){
-            case 'startGame':
-                    console.log('start game'); // log that we are at start game
-                    // update game state with player
-                    //gameState.players.push(data.player);   
-                     // Assign player to a side of the grid
-                    console.log(data.player)
-                    //gameState.players[data.player] = PLAYER_SIDES[data.player];
-                    // Initialize monsters count for the player
-                    //gameState.monstersCount[data.player] = 0; 
-                    // Initialize player 
-                    initializePlayer(data.player);
-                    // init player stats
-                    initializePlayerStats(data.player);
-                    // send start data as json
-                    //const startData = JSON.stringify({ type: 'startGame', player: data.player, board: gameState.board });
-                    //ws.send(startData);
-
-                    // Broadcast the updated player list to all clients
-                    const playerListData = JSON.stringify({ type: 'updatePlayerList', players: gameState.players });
-                    broadcastToAllClients(playerListData);
+            case 'startNewGame':
+                    console.log('***** starting New game:'); // log that we are at start game
+                    console.log('-playerName: '+data.playerName);
+                    console.log('-gameName:' +data.gameName);
+                    startNewGame(data.gameName, data.playerName);
+                    // send that new game started and game name
+                    const newGameStartedData = JSON.stringify({ type: 'newGameStarted', gameName: data.gameName })
+                    ws.send(newGameStartedData);
+                    break;
+            case 'joinExistingGame':
+                    console.log('***** Joining existing game'); // log that we are at start game
+                    console.log('playerName', data.playerName)
+                    console.log('gameState', data.gameState)
+                    joinExistingGame(data.gameState, data.playerName);
+                    // send that new game started and game name
+                    const joinGameStartedData = JSON.stringify({ type: 'joinedGame', gameName: data.gameState.name })
+                    ws.send(joinGameStartedData);
                     break;
             case 'placeMonster': 
                     console.log('place monster'); // log that we are at placing monster

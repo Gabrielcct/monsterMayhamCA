@@ -2,6 +2,32 @@
 <h1>Monster Mayhem</h1>
 <br/>
 <br/>
+
+<h2>Games in progres</h2>
+<div class="played-games">
+    <% if(games &&games.length === 0) { %>
+        
+        <p>no games in progress</p>
+        <button class="btn btn-primary" onclick="startNewGame()">Start New Game</button>
+    <% } else { %>
+        <ul class="list">
+        <% for (let game of games) { %>
+            <li class="li"><%= game.name %>: 
+                <span class="players">Players <%= game.players.length %>/4</span>
+                <% if(game && game.players && game.players.length < 4) { %>
+                    <button class="btn btn-primary" onclick="joinGame('<%=game.name%>')">Join Game</button>
+                <% } else { %>
+                    <span class="full-game">Game is full</span>
+                <% } %>    
+            </li>    
+        <% } %>
+        </ul>
+    <% }%>
+</div>
+<div class="new-game">
+    <button class="btn btn-primary" onclick="startNewGame()">Create New Game</button>
+</div>
+
 <div class="player-statistic">
     <p>Games Played: <%= gamesPlayed %></p>
     <div>
@@ -12,35 +38,5 @@
         <% } %>
     </div>
 </div>
-
-<div id="player-list">
-    <ul>
-        <% for (let player in playersStats) { %>
-            <li class="<%= player.status %>"><%= player.name %></li>
-        <% } %>
-    </ul>
-</div>
-
-<div>
-    <button id="startGame" class="btn btn-primary" onclick="startGame()">Start Game</button>
-    <button id="placeMonster" class="btn btn-secondary" onclick="placeMonster()">Place Monster</button>
-    <button id="endTurn" class="btn btn-danger" onclick="endTurn()">End Turn</button>
-</div>
-
-<div id="gameBoard">
-    
-    <% board.forEach((row, rowIndex) => { %>
-        <!-- Each row -->
-        <div class="board-row">
-            <% row.forEach((cell, colIndex) => { %>
-                <!-- Each collumn (cell in row) -->
-                <div class="cell" data-row="<%= rowIndex %>" data-col="<%= colIndex %>">
-                    <%= cell || '' %> 
-                </div>
-            <% }) %>
-        </div>
-    <% }) %>
-</div>
-
-<div id="message-container"></div> 
+<script src="/client-index.js"></script>
 <%- include("../partials/footer.ejs") -%>

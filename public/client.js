@@ -24,6 +24,10 @@ let currentPlayer = null; // set variable for current player. initially is null
 let isGameStarted = false; // checks if game started
 let isGameOver = false; // check if game finished
 let playersStats = [];
+
+let gamesList = [];
+
+
 // EVENTS
 // This will handle web socket messages (events)
 wsServer.onmessage = (event) => {
@@ -162,3 +166,5 @@ function updatePlayerList(players) {
         playerListElement.appendChild(playerItem);
     });
 }
+
+

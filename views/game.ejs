@@ -1,0 +1,36 @@
+<%- include("../partials/head.ejs") -%>
+<h1>Monster Mayhem</h1>
+<br/>
+<br/>
+<h2>Game name : <%= gameState.name %></h2>
+<div id="player-list">
+    <ul>
+        <% for (let player in gameState.players) { %>
+            <li class="<%= player.status %>"><%= player.name %> status: <%= player.status %></li>
+        <% } %>
+    </ul>
+</div>
+
+<div>
+    <!--<button id="placeMonster" class="btn btn-secondary" onclick="placeMonster()">Place Monster</button>-->
+    <button id="endTurn" class="btn btn-danger" onclick="endTurn()">End Turn</button>
+</div>
+
+<div id="gameBoard">
+    
+    <% gameState.board.forEach((row, rowIndex) => { %>
+        <!-- Each row -->
+        <div class="board-row">
+            <% row.forEach((cell, colIndex) => { %>
+                <!-- Each collumn (cell in row) -->
+                <div class="cell" data-row="<%= rowIndex %>" data-col="<%= colIndex %>">
+                    <%= cell || '' %> 
+                </div>
+            <% }) %>
+        </div>
+    <% }) %>
+</div>
+
+<div id="message-container"></div> 
+<script src="/client.js"></script>
+<%- include("../partials/footer.ejs") -%>

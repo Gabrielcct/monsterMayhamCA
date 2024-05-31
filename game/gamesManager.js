@@ -24,13 +24,14 @@ function getAllGames(){
  * @param {*} playerName 
  * @return {*} new GameState that is created
  */
-function startNewGame(playerName, gameName){
+function startNewGame(gameName, playerName){
     // get empty gameState object
     const newGameState = getGameState(gameName);
     // create new player and add it to game state 
     setGameStatePlayer(newGameState, playerName);
     // add it to games
     addToGames(newGameState);
+    console.log(newGameState)
     return newGameState;
 }
 
@@ -49,6 +50,15 @@ function joinExistingGame(gameState, playerName){
     }
 }
 
+function getGameStateFromGames(gameStateName){
+    return games.find(gameState=>gameState.name = gameStateName);
+}
 
 
-module.exports = { startNewGame, joinExistingGame, getAllGames };
+module.exports = { 
+    startNewGame, 
+    joinExistingGame, 
+    getAllGames, 
+    getGameStateFromGames,
+    games, 
+};

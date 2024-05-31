@@ -22,7 +22,7 @@ function getGameState(gameName){
  * Function to create and add new player to game state
  * @param {*} player 
  */
-function setGameStatePlayer(playerName, gameState){
+function setGameStatePlayer(gameState, playerName){
     // find free side
     const side = findFreeSide(gameState); 
     // if side is found 
@@ -30,7 +30,7 @@ function setGameStatePlayer(playerName, gameState){
         // create new player
         const newPlayer = getNewPlayer(playerName, side);
         // add player to game state
-        addPlayerToGameState(plaplayerName, gameState);
+        addPlayerToGameState(gameState, newPlayer);
     } else {
         throw new Error('No available sides for new players.');
     }
@@ -39,11 +39,11 @@ function setGameStatePlayer(playerName, gameState){
 /**
  * Function to add player to game state 
  */
-function addPlayerToGameState(plaplayerName, gameState) {
+function addPlayerToGameState(gameState, newPlayer) {
     // check first if that player exist
-    if (!gameState.players.find(p => p.name === player)) {
+    if (!gameState.players.find(p => p.name === newPlayer.name)) {
         // if is no add it to game state
-        gameState.players.push(player);
+        gameState.players.push(newPlayer);
     }
 }
 
@@ -64,4 +64,4 @@ function findFreeSide(gameState){
     return selectedSide;
 }
 
-module.exports = { getGameState, setGameStatePlayer, addPlayerToGameState, setGameStatePlayer, getGameState };
+module.exports = { getGameState, setGameStatePlayer };
