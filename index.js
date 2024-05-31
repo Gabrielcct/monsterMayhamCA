@@ -58,7 +58,7 @@ function initializePlayerStats(player) {
 
 // SET UP ROUTES
 app.get("/", (req, res) => {
-    res.render("index.ejs", { games, gamesPlayed, playersStats} );
+    res.render("index.ejs", { games:getAllGames(), gamesPlayed, playersStats} );
 });
 
 app.get("/game/:name", (req, res) => {
@@ -99,9 +99,9 @@ wsServer.on('connection', (ws) => {
                     console.log('***** Joining existing game'); // log that we are at start game
                     console.log('playerName', data.playerName)
                     console.log('gameState', data.gameState)
-                    joinExistingGame(data.gameState, data.playerName);
+                    let updatedGameState = joinExistingGame(data.gameState, data.playerName);
                     // send that new game started and game name
-                    const joinGameStartedData = JSON.stringify({ type: 'joinedGame', gameName: data.gameState.name })
+                    const joinGameStartedData = JSON.stringify({ type: 'joinedGame', gameName: updatedGameState.name })
                     ws.send(joinGameStartedData);
                     break;
             case 'placeMonster': 

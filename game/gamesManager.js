@@ -17,6 +17,17 @@ function getAllGames(){
     return games;
 }
 
+function updateGamesGameState(updatedGameState){
+    if(games && games.length){
+        for (let i = 0; i < games.length; i++) {
+            if (games[i].name === updatedGameState.name) {
+                games[i] = updatedGameState;
+                break; // Exit the loop once the game is found and updated
+            }
+        }
+    }
+}
+
 /**
  * Start a new game.
  * This will create new player and add it to new game state object 
@@ -31,7 +42,6 @@ function startNewGame(gameName, playerName){
     setGameStatePlayer(newGameState, playerName);
     // add it to games
     addToGames(newGameState);
-    console.log(newGameState)
     return newGameState;
 }
 
@@ -45,6 +55,8 @@ function startNewGame(gameName, playerName){
 function joinExistingGame(gameState, playerName){
     if (gameState.players.length < gameState.maxPlayers) {
         setGameStatePlayer(gameState, playerName);
+        updateGamesGameState(gameState);
+        return gameState;
     } else {
         throw new Error('Game is full.');
     }

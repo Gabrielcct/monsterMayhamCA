@@ -42,8 +42,10 @@ function setGameStatePlayer(gameState, playerName){
 function addPlayerToGameState(gameState, newPlayer) {
     // check first if that player exist
     if (!gameState.players.find(p => p.name === newPlayer.name)) {
-        // if is no add it to game state
+       // if is no add it to game state
         gameState.players.push(newPlayer);
+    }else {
+        throw new Error('Duplicate player.');
     }
 }
 
