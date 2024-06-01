@@ -14,7 +14,9 @@
     </ul>
 </div>
 <% if(!games[gameName].isGameStarted) { %>
-    <button id="start-game" class="btn btn-primary" onclick="startGame('<%=gameName%>', '<%=playerName%>')">Start Game</button>
+    <div id="start-game-button">
+        <button id="start-game" class="btn btn-primary" onclick="startGame('<%=gameName%>', '<%=playerName%>')">Start Game</button>
+    </div>
 <% } %>
     <div id="game-area" class="display-none">
         <div>

@@ -7,6 +7,8 @@ const ejs = require("ejs");
 const path = require('path');
 const WebSocket = require('ws');
 
+// Map to store WebSocket connections for each game
+const gameConnections = {};
 // IMPORTS
 const { startNewGame, joinExistingGame, startCurrentGame, games } = require('./game/gamesManager'); // Update the path if necessary
 const { MONSTER_STATUS, MONSTER_TYPE} = require('./game/monsters');
@@ -71,12 +73,26 @@ app.get("/game/:name/:playerName", (req, res) => {
     res.render("game.ejs", { games, gameName, playerName, playerMonsters: games[gameName].players[playerName].monsters} );
 });
 
+// Route to get game data (including game name)
+app.get('/game-data', (req, res) => {
+    // Retrieve the game name from the session
+    const gameName = req.session.gameName;
+    const playerName = req.session.playerName;
+   // Send the game name in the response
+    res.json({ gameName, playerName, games });
+});
+
+let updatedGames; // will hold updated hames object
+let playerData; // data we are sending to pplayer
+let playersData; // data we are sending to all players in same game
+let everyoneData; // data we are sending to everyone
 
 // WEBSOCKET - make a connection
-wsServer.on('connection', (ws) => {
-    // log that user connected
-    console.log('A user connected');
-    
+wsServer.on('connection', (ws, req) => {
+    const gameName = req.url.split('/').pop(); // Extract game name from the URL
+    //console.log(ws)
+    console.log(`A user connected to game ${gameName}`);
+  
     // SEND INITIAL DATA to index
     const initialData = JSON.stringify({ type: 'initial-data', games });
     ws.send(initialData);
@@ -88,21 +104,30 @@ wsServer.on('connection', (ws) => {
         // handle different types of messages by switching on type
         switch(data.type){
             case 'start-new-game':
-                    const newGames = startNewGame(data.gameName, data.playerName);
-                    const newGameStartedData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games:newGames });
-                    ws.send(newGameStartedData);
+                    updatedGames = startNewGame(data.gameName, data.playerName);
+                    playerData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
+                    ws.send(playerData);
+                    playersData = JSON.stringify({ type: 'player-joined', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
+                    sendToGamePlayers(data.gameName, playersData);
+                    everyoneData = JSON.stringify({ type: 'index-player-joined', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
+                    broadcastToAllClients(everyoneData, wsServer);
                     break;
             case 'join-game':
-                    const updatedGames = joinExistingGame(data.gameName, data.playerName);
+                    updatedGames = joinExistingGame(data.gameName, data.playerName);
                     // send that new game started and game name
-                    const joinGameStartedData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
-                    ws.send(joinGameStartedData);
-                    const newPlayerJoinedData = JSON.stringify({ type: 'player-joined', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
-                    broadcastToAllClients(newPlayerJoinedData, wsServer);
-            case 'start-game':
-                    const currentGames = startCurrentGame(games, data.gameName, data.playerName);
-                    const announcGameStarted =  JSON.stringify({ type: 'current-game-started', gameName: data.gameName, playerName: data.playerName, games:currentGames });
-                    broadcastToAllClients(announcGameStarted, wsServer);
+                    playerData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
+                    ws.send(playerData);
+                    playersData = JSON.stringify({ type: 'player-joined', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
+                    sendToGamePlayers(data.gameName, playersData);
+                    everyoneData = JSON.stringify({ type: 'index-player-joined', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
+                    broadcastToAllClients(everyoneData, wsServer);
+                    break;
+           case 'start-game':
+                    updatedGames = startCurrentGame(games, data.gameName, data.playerName);
+                    playerData = JSON.stringify({ type: 'current-game-started', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
+                    sendToGamePlayers(data.gameName, playerData);
+                    everyoneData = JSON.stringify({ type: 'index-current-game-started', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
+                    broadcastToAllClients(everyoneData, wsServer);
                     break;
             case 'placing-monster':
                     // update board with available placement positions based on player whos turn it is
@@ -115,7 +140,9 @@ wsServer.on('connection', (ws) => {
             case 'add-monster':
                     const returnedGames = addMonsterToBoard(games, data.gameName, data.playerName, data.row, data.col, data.monster);
                     const addingMonsterData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:returnedGames, isAddingMonster:false, isMovingMonster:false });
-                    ws.send(addingMonsterData);
+                    //ws.send(addingMonsterData);
+                    // send to all game players
+                    sendToGamePlayers(data.gameName, addingMonsterData);
                     break;
             case 'monster-clicked':
                     const monsterClickedGames = updateBoardMonsterClicked(games, data.gameName, data.playerName, data.row, data.col, data.monster);
@@ -125,7 +152,9 @@ wsServer.on('connection', (ws) => {
             case 'monster-moved':
                     const monsterMovedGames = updateBoardMonsterMoved(games, data.gameName, data.playerName, data.row, data.col);
                     const monsterMovedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:monsterMovedGames, isAddingMonster:false, isMovingMonster:false });
-                    ws.send(monsterMovedData);
+                    //ws.send(monsterMovedData);
+                    // send to all game players
+                    sendToGamePlayers(data.gameName, monsterMovedData);
                     break;
             default: return;
         }
@@ -136,7 +165,28 @@ wsServer.on('connection', (ws) => {
         console.log('A user disconnected');
     });
 
+    // Associate the WebSocket connection with the game
+    if(gameName){
+        if (!gameConnections[gameName]) {
+            gameConnections[gameName] = [];
+        }
+        gameConnections[gameName].push(ws);
+    }
+    
+
 });
+
+
+// Function to broadcast data to players within the same game
+function sendToGamePlayers(gameName, data) {
+    const connections = gameConnections[gameName] || [];
+    connections.forEach(client => {
+        console.log(client)
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(data);
+        }
+    });
+}
 
 // Function to broadcast data to all clients
 function broadcastToAllClients(data, server) {

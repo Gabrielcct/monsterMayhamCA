@@ -13,11 +13,20 @@ wsServer.onmessage = (event) => {
     switch(data.type){
         case 'initial-data':
             gamesList = data.games;
+            updateGamesList(gamesList);
             break;
         case 'joined-game':
             console.log('inside')
             // when player joins game redirect to game page
             window.location.href = `/game/${data.gameName}/${data.playerName}`;
+            break;
+        case 'index-player-joined':
+            // when player joins the game update game list
+            updateGamesList(data.games);
+            break;
+        case 'index-current-game-started':
+            // when any of the games started update game list
+            updateGamesList(data.games);
             break;
         default: break;
     }
@@ -41,24 +50,55 @@ function startNewGame(){
     wsServer.send(data); // send data to websocket
 }
 
-function joinGame(gameName){
-    // check if we have games object
-    if(!gamesList){
-        return alert("Can't join game");
-    }
-     // if game with that name don't exists 
-    if(!gamesList[gameName]){
-        return alert("Game with that name don't exists, try again"); 
-    }
+function joinGame(gameName, games){
     // prompt player to enter name
     const playerName = prompt("Enter player name (must be unique):");
     // if player name exist
-    if(gamesList[gameName].players && gamesList[gameName].players[playerName]){
+    if(games[gameName].players && games[gameName].players[playerName]){
         return alert("Player with that name already is in game. Player Name must be unique for game. Try again"); 
     }
     const data = JSON.stringify({ type: 'join-game', gameName, playerName });
     wsServer.send(data); // send data to websocket
 }
+
+function updateGamesList(games) {
+    const playedGamesContainer = document.getElementById('played-games');
+    playedGamesContainer.innerHTML = ''; // Clear the current list
+
+    if (games && Object.keys(games).length > 0) {
+        for (let gameName in games) {
+            let game = games[gameName];
+            const li = document.createElement('li');
+            const playersList = Object.keys(game.players).join(', ');
+
+            li.innerHTML = `
+                <strong>Game Name:</strong> ${gameName} --- <span class="players">${game.currentPlayers} / ${game.maxPlayers}</span>
+                <div class="status">Is game in progress: ${game.isGameStarted}</div>
+                <strong>Players:</strong>
+                <ul class="inside-list">
+                    ${playersList}
+                </ul>`;
+
+            if (game.currentPlayers < 4 && !game.isGameStarted) {
+                const joinButton = document.createElement('button');
+                joinButton.textContent = 'Join Game';
+                joinButton.classList.add('btn', 'btn-primary');
+                joinButton.onclick = () => joinGame(gameName, games);
+                li.appendChild(joinButton);
+            } else {
+                const fullGameSpan = document.createElement('span');
+                fullGameSpan.textContent = 'Game is full or in progress';
+                fullGameSpan.classList.add('full-game');
+                li.appendChild(fullGameSpan);
+            }
+
+            playedGamesContainer.appendChild(li);
+        }
+    } else {
+        playedGamesContainer.innerHTML = '<h2> No games currently in progress</h2>';
+    }
+}
+
 
 
 // HELPERS to TRACK WEB SOCKET SERVER STATUS

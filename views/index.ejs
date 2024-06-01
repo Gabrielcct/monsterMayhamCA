@@ -5,7 +5,7 @@
 <br/>
 
 <!-- Games that are played -->
-<div class="played-games">
+<div id="played-games" class="played-games">
     <!-- Check if there is games object-->
     <% if(games) { %>
         <!-- If Games object has properties -->
@@ -20,6 +20,7 @@
                     <li>
                         <!-- Game name and number of current players / maximum players-->
                         <strong>Game Name:</strong> <%= gameName %> --- <span class="players"><%= game.currentPlayers %> / <%= game.maxPlayers %></span>
+                        <div class="status">Is game in progress:<%= game.isGameStarted %></div>
                         <!-- List players -->
                         <strong>Players:</strong>
                         <ul class="inside-list">
@@ -29,12 +30,12 @@
                             <% } %>
                         </ul> 
                         <!-- if there is available slots to join game -->
-                        <% if(game.currentPlayers < 4) { %>
+                        <% if(game.currentPlayers < 4 && !game.isGameStarted) { %>
                             <!-- show join game button -->
                             <button class="btn btn-primary" onclick="joinGame('<%=gameName%>')">Join Game</button>
                         <% } else { %>
                             <!-- if no display messasage game is full -->
-                            <span class="full-game">Game is full</span>
+                            <span class="full-game">Game is full or in progress</span>
                         <% } %> 
                     </li>    
                 <% } %>
