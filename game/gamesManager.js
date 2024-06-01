@@ -36,7 +36,8 @@ function startNewGame(gameName, playerName){
         maxPlayers: 4,
         currentPlayers: 1,
         isGameStarted: false,
-        movingMonster: null
+        movingMonster: null,
+        round: 1
     }
     return games;
 }
@@ -96,14 +97,74 @@ function getPlayerSide(playerNumber){
     }
 }
 
-function startCurrentGame(games, gameName, playerName){
+function Turn(games, gameName) {
     games[gameName].isGameStarted = true;
+    const players = games[gameName].players;
+    const playerIds = Object.keys(players);
+
+    // Identify the current active player
+    const currentActivePlayerId = playerIds.find(playerId => players[playerId].status === PLAYER_STATUS.playing);
+
+    // Calculate the number of monsters for each player
+    const monsterCounts = playerIds.map(playerId => {
+        return {
+            playerId,
+            monsterCount: players[playerId].monsters.length
+        };
+    });
+
+    // Sort players by the number of monsters
+    monsterCounts.sort((a, b) => a.monsterCount - b.monsterCount);
+
+    // Find players with the fewest monsters, excluding the current active player
+    const minMonsterCount = Math.min(...monsterCounts.filter(player => player.playerId !== currentActivePlayerId).map(player => player.monsterCount));
+    const candidates = monsterCounts.filter(player => player.monsterCount === minMonsterCount && player.playerId !== currentActivePlayerId);
+
+    // Randomly select a player if there are ties
+    const nextPlayer = candidates[Math.floor(Math.random() * candidates.length)];
+    const nextPlayerId = nextPlayer.playerId;
+
+    // Update the player's status to "playing"
+    for (let playerName in games[gameName].players) {
+        if (playerName === nextPlayerId) {
+            games[gameName].players[playerName].status = PLAYER_STATUS.playing;
+        } else {
+            games[gameName].players[playerName].status = PLAYER_STATUS.waiting;
+        }
+    }
+
     return games;
 }
+
+
+function onTurnEndReset(games, gameName, playerName) {
+    const board = games[gameName].board;
+    const currentPlayer = games[gameName].players[playerName];
+    const playerId = currentPlayer.id;
+    // remove moving monster
+    games[gameName].movingMonster = null;
+    // reset moved status of all monsters that player moved
+    for (let row = 0; row < board.length; row++) {
+        for (let col = 0; col < board[row].length; col++) {
+            const cell = board[row][col];
+            if (cell && cell.value && cell.isMovedThisTurn && cell.class.includes(`player-${playerId}`)) {
+                // Reset the isMovedThisTurn property for this monster
+                cell.isMovedThisTurn = false;
+            }
+        }
+    }
+
+    // Return the updated game object
+    return games;
+}
+
+
+
 
 module.exports = { 
     startNewGame, 
     joinExistingGame, 
-    startCurrentGame,
+    Turn,
+    onTurnEndReset,
     games
 };

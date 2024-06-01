@@ -44,8 +44,16 @@ function startNewGame(){
     if(gamesList[gameName]){
         return alert('Game with that name already exists, try again'); 
     }
+    if(!gameName){
+        alert("Game name can't be empty. Try again"); 
+        return;
+    }
     // prompt player to enter name
     const playerName = prompt("Enter player name:"); 
+    if(!playerName){
+        alert("Player name can't be empty. Try again"); 
+        return;
+    }
     const data = JSON.stringify({ type: 'start-new-game', gameName, playerName });
     wsServer.send(data); // send data to websocket
 }
@@ -55,7 +63,12 @@ function joinGame(gameName, games){
     const playerName = prompt("Enter player name (must be unique):");
     // if player name exist
     if(games[gameName].players && games[gameName].players[playerName]){
-        return alert("Player with that name already is in game. Player Name must be unique for game. Try again"); 
+         alert("Player with that name already is in game. Player Name must be unique for game. Try again"); 
+         return
+    }
+    if(!playerName){
+        alert("Player name can't be empty. Try again"); 
+        return;
     }
     const data = JSON.stringify({ type: 'join-game', gameName, playerName });
     wsServer.send(data); // send data to websocket

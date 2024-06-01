@@ -33,6 +33,7 @@ function getStartingMonsters (){
                 status: MONSTER_STATUS.alive, // initially monster is alive
                 location: null, // if location is null monster is not placed on board
                 type: MONSTER_TYPE.none, // type is defined on placing monster
+                isMovedThisTurn: false
             }
         );
     }

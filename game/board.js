@@ -56,6 +56,20 @@ function updateBoardAvailableMovement(games, gameName, playerName){
     }
     return games;
 }
+
+function clearMonsterAvailableMovement(games, gameName){
+    let gameBoard = games[gameName].board;
+    // Clear all previous placement indicators
+    for (let i = 0; i < gameBoard.length; i++) {
+        for (let j = 0; j < gameBoard[i].length; j++) {
+            if (gameBoard[i][j] && gameBoard[i][j].value === 'click') {
+                gameBoard[i][j] = null;
+            }
+        }
+    }
+    return games;
+}
+
 function addMonsterToBoard(games, gameName, playerName, row, col, monsterId){
     let gameBoard = games[gameName].board;
     // Clear all previous placement indicators
@@ -74,7 +88,13 @@ function addMonsterToBoard(games, gameName, playerName, row, col, monsterId){
     let playerId = games[gameName].players[playerName].id;
     games[gameName].board[row][col] ={
         value: monster.id,
-        class: `player-${playerId} ${monster.value}`
+        class: `player-${playerId} ${monster.value}`,
+        isMovedThisTurn: true,
+        location: {
+            row: row,
+            col: col
+        },
+        player: playerName
     }
 
     games[gameName].players[playerName].placedMonsters++;
@@ -114,10 +134,17 @@ function updateBoardMonsterMoved(games, gameName, playerName, row, col){
     }
     // add monster to board on new position
     let monster = getMonsterById(games[gameName].movingMonster.id);
+    games[gameName].movingMonster = null; // reset
     let playerId = games[gameName].players[playerName].id;
     games[gameName].board[row][col] ={
         value: monster.id,
-        class: `player-${playerId} ${monster.value}`
+        class: `player-${playerId} ${monster.value}`,
+        isMovedThisTurn: true,
+        location: {
+            row: row,
+            col: col
+        },
+        player: playerName
     }
     return games;
 }
@@ -217,12 +244,37 @@ function monsterAvailableMovement(games, gameName, playerName, row, col) {
     return games;
 }
 
+/**
+ * Check if there are unmoved monsters
+ */
+function hasUnmovedMonsters(games, gameName, playerName) {
+    const board = games[gameName].board;
+    const player = games[gameName].players[playerName];
+    const playerId = player.id;
+
+    for (let row = 0; row < board.length; row++) {
+        for (let col = 0; col < board[row].length; col++) {
+            const cell = board[row][col];
+            if (cell && cell.value && cell.class.includes(`player-${playerId}`) && !cell.isMovedThisTurn) {
+                // Found an unmoved monster belonging to the player
+                return true;
+            }
+        }
+    }
+
+    // No unmoved monsters found for the player
+    return false;
+}
+
+
 
 // Reference https://www.sitepoint.com/understanding-module-exports-exports-node-js/
 module.exports = { 
     createBoard, 
-    updateBoardAvailableMovement, 
+    updateBoardAvailableMovement,
+    clearMonsterAvailableMovement, 
     addMonsterToBoard ,
     updateBoardMonsterClicked,
-    updateBoardMonsterMoved
+    updateBoardMonsterMoved,
+    hasUnmovedMonsters
 };

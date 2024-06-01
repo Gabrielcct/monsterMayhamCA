@@ -1,108 +1,153 @@
 fetch('/game-data')
     .then(response => response.json())
     .then(data => {
+        // set variables get from server
         const gameName = data.gameName;
-        const player = data.playerName;
-        const games = data.games;
-          // new websocket
+        const playerName = data.playerName;
+        let games = data.games;
+        // new websocket -- for game
         const url = `ws://localhost:3000/game/${gameName}`;
-        console.log(url)
         const wsServer = new WebSocket(url);
-
-        // SET VARIABLES
-    
         // get game board
         const gameBoard = document.getElementById("gameBoard");
-        let currentPlayer = player; // set variable for current player. initially is null
-        let currentGameName = gameName;
-        let curentGames = games;
-        let isGameStarted = false; // checks if game started
-        let isGameOver = false; // check if game finished
-        let monsters = [];
+        // SET variables
         let isMovingMonster = false;
         let isAddingMonster = false;
-        let movingmonster = null;
+        let isPreventAddingMonsters = false;
 
+        let isGameOver = false; // check if game finished
+        
         // EVENTS
         // This will handle web socket messages (events)
         wsServer.onmessage = (event) => {
-            
             // pasrse JSON to get data
             const data = JSON.parse(event.data);
-            console.log(data)
             // based on message type do different things
             switch(data.type){
                 case 'player-joined':
+                    games = data.games; 
                     // when new player joins game, update the player list
-                    const playerListHTML = updatePlayerList(data.games, data.gameName);
-                    console.log('player-joined')
-                    document.getElementById('player-list').innerHTML = `<ul>${playerListHTML}</ul>`;
+                    const playerListHTML1 = updatePlayerList(data.games, data.gameName);
+                    document.getElementById('player-list').innerHTML = `<ul>${playerListHTML1}</ul>`;
                     break;
                 case 'current-game-started':
-                        console.log('Game initialised');
-                        console.log(data);
-                        updateLocalVariables(data.games, data.playerName,data.gameName);
-                        isGameStarted = true;
-                        displayGameArea();
-                        if (data.games[data.gameName] && data.games[data.gameName].players[data.playerName]) {
-                            const monsters = data.games[data.gameName].players[data.playerName].monsters;
-                            if (monsters) { 
-                                updateMonstersDiv(monsters);
-                            }
+                    games = data.games; 
+                    displayGameArea();
+                    if (data.games[data.gameName] && data.games[data.gameName].players[data.playerName]) {
+                        const monsters = data.games[data.gameName].players[data.playerName].monsters;
+                        if (monsters) { 
+                            updateMonstersDiv(monsters);
                         }
-                        break;
+                    }
+                    const playerListHTML2 = updatePlayerList(data.games, data.gameName);
+                    document.getElementById('player-list').innerHTML = `<ul>${playerListHTML2}</ul>`;
+                    break;
                 case 'updated-board':
-                        console.log('Board updated'); // log that game board is updated with new data.board
-                        console.log(data.games[data.gameName].board);
-                        isAddingMonster = data.isAddingMonster;
-                        isMovingMonster = data.isMovingMonster;
-                        updateLocalVariables(data.games, data.playerName,data.gameName);
-                        createBoard(data.games[data.gameName].board); // update game board is updated with new data.board
-                        break;
-                
-                        
-               default: break;
+                    isAddingMonster = data.isAddingMonster;
+                    isMovingMonster = data.isMovingMonster;
+                    games = data.games; 
+                    createBoard(data.games[data.gameName].board); // update game board is updated with new data.board
+                    // update player list
+                    const playerListHTML4 = updatePlayerList(data.games, data.gameName);
+                    document.getElementById('player-list').innerHTML = `<ul>${playerListHTML4}</ul>`;
+                    break;
+                case 'new-monster-added':
+                    // if monster was added reset it
+                    updatePlaceMonsterView();
+                    // prevent adding new monsters this turn
+                    isPreventAddingMonsters = true;
+                    break;
+                case 'new-monster-added-cancelled':
+                    // if monster was added reset it
+                    updatePlaceMonsterView();
+                    break;
+                case 'turn':
+                    games = data.games; 
+                    createBoard(data.games[data.gameName].board); // update game board is updated with new data.board
+                    const playerListHTML3 = updatePlayerList(data.games, data.gameName);
+                    document.getElementById('player-list').innerHTML = `<ul>${playerListHTML3}</ul>`;
+                    break;
+                default: break;
             }
         };
 
         // START GAME
         window.startGame = function (gameName, playerName){
+            if (Object.keys(games[gameName].players).length < 2) {
+                alert('You need a minimum of two players to start the game');
+                return;
+            }
             const data = JSON.stringify({ type: 'start-game', gameName, playerName });
             wsServer.send(data);
         }
+        // Function to end the turn
+        window.endTurn = function (gameName, playerName) {
+            // Check if it's the current player's turn
+            if (games[gameName].players[playerName].status == 'waiting') {
+                alert("It's not your turn!");
+                return; // Exit the function if it's not the current player's turn
+            }
+
+            if(isAddingMonster || isMovingMonster){
+                alert('First cancel or finish your movement');
+                return;
+            }
+            // allow adding monsters for next turn
+            isPreventAddingMonsters = false;
+            // Send a message to the server to indicate that the current player's turn has ended
+            const data = JSON.stringify({ type: 'end-turn', gameName, playerName });
+            wsServer.send(data); // Send data to the WebSocket server
+        };
         
         // ADD CLICK EVENT LISENER TO GAME BOARD
         gameBoard.addEventListener('click', (event) => {
+            // Check if it's the current player's turn
+            if (games[gameName].players[playerName].status == 'waiting') {
+                alert("It's not your turn!");
+                return; // Exit the function if it's not the current player's turn
+            }
             // if cell is clicked
             if (event.target.classList.contains('cell')) {
                 const row = event.target.dataset.row; // get row clicked
                 const col = event.target.dataset.col; // get column clicked
                 // Check the value of the cell
                 const cellValue = event.target.innerText;
-                console.log(cellValue)
+                
                 if (cellValue === 'click') {
                     if(isAddingMonster){
                         // prompt user to enter monster type
                         const monster = prompt("Enter 'v' for vampire, 'w' for werewolf, 'g' for ghost, or 'c' to cancel:");
                         if (monster === 'c' || !['v', 'w', 'g'].includes(monster)) {
                             alert('Placement canceled');
+                            cancelPlacingMonster();
+                            return;
                         } else {
                             // if we are adding a monster and clicked on empty cell
                             // set action as placeMonster and send all values
-                            const data = JSON.stringify({ type: 'add-monster', gameName: currentGameName, playerName: currentPlayer, row, col, monster });
+                            const data = JSON.stringify({ type: 'add-monster',gameName, playerName, row, col, monster });
                             wsServer.send(data); // send data to websocket
                         }
                     }
-                    // if we are moving existing onster and clicked on empty cell
+                    // if we are moving existing monster and clicked on empty cell
                     if(isMovingMonster){
                         // set action as moving and send all values
-                        const data = JSON.stringify({ type: 'monster-moved', gameName: currentGameName, playerName: currentPlayer, row, col });
+                        const data = JSON.stringify({ type: 'monster-moved', gameName, playerName, row, col });
                         wsServer.send(data); // send data to websocket
                     }
-                } else if (['v', 'w', 'c'].includes(cellValue)) {
+                } else if (['v', 'w', 'g'].includes(cellValue)) {
+                    // allow clicking only on player monster
+                    
+                    if(event.target.dataset.player != playerName){
+                        alert('You can move only your monsters');
+                        return;
+                    }
+                    if(event.target.dataset.isMovedThisTurn == "true"){
+                        alert('Monster already moved this turn!');
+                        return;
+                    }
                     isMovingMonster = true;
                     // Send the current monster type to the server
-                    const data = JSON.stringify({ type: 'monster-clicked', gameName: currentGameName, playerName: currentPlayer, row, col, monster: cellValue });
+                    const data = JSON.stringify({ type: 'monster-clicked', gameName, playerName, row, col, monster: cellValue });
                     wsServer.send(data); // send data to websocket
                 }
             }
@@ -131,6 +176,12 @@ fetch('/game-data')
                     if (cell === null) {
                         cellDiv.innerText = '';
                     } else {
+                        if(cell.player){
+                            cellDiv.dataset.player = cell.player;
+                        }
+                        if(cell.isMovedThisTurn != undefined){
+                            cellDiv.dataset.isMovedThisTurn = cell.isMovedThisTurn;
+                        }
                         cellDiv.innerText = cell.value;
                         cellDiv.className += ` ${cell.class}`;
                     }
@@ -139,18 +190,6 @@ fetch('/game-data')
                 gameBoard.appendChild(rowDiv);
             });
         }
-
-        /**
-         * Function to display message which player is playing
-         * @param {*} message -- message to be displayed
-         */
-        function displayMessage(message) {
-            const messageElement = document.createElement('div');
-            messageElement.textContent = message;
-            // Assuming you have a message container with id "message-container"
-            document.getElementById('message-container').appendChild(messageElement);
-        }
-
 
         /**
          * Function to update player list when new player joins
@@ -198,6 +237,14 @@ fetch('/game-data')
         }
         
         function placeMonster(){
+            if (games[gameName].players[playerName].status == 'waiting') {
+                alert("It's not your turn!");
+                return; // Exit the function if it's not the current player's turn
+            }
+            if(isPreventAddingMonsters){
+                alert("Only one monster can be added per turn!");
+                return; // Exit the function if it's not the current player's turn
+            }
             isAddingMonster = true;
             const monsterPlacement = document.getElementById('monster-placement');
             // clear content
@@ -205,12 +252,19 @@ fetch('/game-data')
             // append cancel placing monster button
             const cancelPlaceMonsterButton = createElement('button', 'btn btn-secondary', 'Cancel Placing Monster', cancelPlacingMonster);
             monsterPlacement.appendChild(cancelPlaceMonsterButton);
-            const data = JSON.stringify({ type: 'placing-monster', gameName: currentGameName, playerName: currentPlayer });
+            const data = JSON.stringify({ type: 'placing-monster', gameName, playerName });
             wsServer.send(data); // send data to websocket
 
         }
 
         function cancelPlacingMonster(){
+            isAddingMonster = false;
+            updatePlaceMonsterView();
+            const data = JSON.stringify({ type: 'cancel-placing-monster', gameName, playerName });
+            wsServer.send(data); // send data to websocket
+        }
+
+        function updatePlaceMonsterView(){
             isAddingMonster = false;
             const monsterPlacement = document.getElementById('monster-placement');
             // clear content
@@ -231,14 +285,7 @@ fetch('/game-data')
             return el;
         }
 
-
-        function updateLocalVariables(dataGames, dataPlayerName, dataGameName){
-            curentGames = dataGames;
-            currentPlayer = dataPlayerName;
-            currentGameName = dataGameName;
-        }
-        
-        // TRACK WEB SOCKET SERVER 
+       // TRACK WEB SOCKET SERVER 
         wsServer.onopen = () => {
             console.log('Connected to WebSocket server');
         };

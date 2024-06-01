@@ -10,13 +10,15 @@ const WebSocket = require('ws');
 // Map to store WebSocket connections for each game
 const gameConnections = {};
 // IMPORTS
-const { startNewGame, joinExistingGame, startCurrentGame, games } = require('./game/gamesManager'); // Update the path if necessary
+const { startNewGame, joinExistingGame, Turn, onTurnEndReset, games } = require('./game/gamesManager'); // Update the path if necessary
 const { MONSTER_STATUS, MONSTER_TYPE} = require('./game/monsters');
 const {
     updateBoardAvailableMovement, 
     addMonsterToBoard,
     updateBoardMonsterClicked,
-    updateBoardMonsterMoved
+    updateBoardMonsterMoved,
+    hasUnmovedMonsters,
+    clearMonsterAvailableMovement
 } = require('./game/board');
 
 //const PORT = (3000); //use port 3000
@@ -123,7 +125,7 @@ wsServer.on('connection', (ws, req) => {
                     broadcastToAllClients(everyoneData, wsServer);
                     break;
            case 'start-game':
-                    updatedGames = startCurrentGame(games, data.gameName, data.playerName);
+                    updatedGames = Turn(games, data.gameName, data.playerName);
                     playerData = JSON.stringify({ type: 'current-game-started', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
                     sendToGamePlayers(data.gameName, playerData);
                     everyoneData = JSON.stringify({ type: 'index-current-game-started', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
@@ -137,12 +139,21 @@ wsServer.on('connection', (ws, req) => {
                     const palcingMonsterData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:updatedGamesWithNewBoard, isAddingMonster:true, isMovingMonster:false});
                     ws.send(palcingMonsterData);
                     break;
+            case 'cancel-placing-monster':
+                    // on cancel placing monster remove availabele routs
+                    const updatedGamesOnCancelPlacingMonster = clearMonsterAvailableMovement(games, data.gameName);
+                    const cancelPalcingMonsterData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:updatedGamesOnCancelPlacingMonster, isAddingMonster:true, isMovingMonster:false});
+                    ws.send(cancelPalcingMonsterData);
+                    // cancel placing monster for user
+                    ws.send(JSON.stringify({ type: 'new-monster-added-cancelled' })); 
+                    break;
             case 'add-monster':
                     const returnedGames = addMonsterToBoard(games, data.gameName, data.playerName, data.row, data.col, data.monster);
                     const addingMonsterData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:returnedGames, isAddingMonster:false, isMovingMonster:false });
-                    //ws.send(addingMonsterData);
                     // send to all game players
                     sendToGamePlayers(data.gameName, addingMonsterData);
+                    // cancel placing monster for user
+                    ws.send(JSON.stringify({ type: 'new-monster-added' })); 
                     break;
             case 'monster-clicked':
                     const monsterClickedGames = updateBoardMonsterClicked(games, data.gameName, data.playerName, data.row, data.col, data.monster);
@@ -155,6 +166,12 @@ wsServer.on('connection', (ws, req) => {
                     //ws.send(monsterMovedData);
                     // send to all game players
                     sendToGamePlayers(data.gameName, monsterMovedData);
+                    break;
+            case 'end-turn':
+                    let tempGames = Turn(games, data.gameName, data.playerName);
+                    const endTurnGames = onTurnEndReset(tempGames, data.gameName, data.playerName)
+                    const endTurnData = JSON.stringify({ type: 'turn', gameName: data.gameName, playerName: data.playerName, games:endTurnGames, isAddingMonster:false, isMovingMonster:false });
+                    sendToGamePlayers(data.gameName, endTurnData);
                     break;
             default: return;
         }
@@ -181,7 +198,6 @@ wsServer.on('connection', (ws, req) => {
 function sendToGamePlayers(gameName, data) {
     const connections = gameConnections[gameName] || [];
     connections.forEach(client => {
-        console.log(client)
         if (client.readyState === WebSocket.OPEN) {
             client.send(data);
         }

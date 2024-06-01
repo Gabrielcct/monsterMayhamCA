@@ -21,7 +21,7 @@
     <div id="game-area" class="display-none">
         <div>
             <!--<button id="placeMonster" class="btn btn-secondary" onclick="placeMonster()">Place Monster</button>-->
-            <button id="endTurn" class="btn btn-danger" onclick="endTurn()">End Turn</button>
+            <button id="endTurn" class="btn btn-danger" onclick="endTurn('<%=gameName%>', '<%=playerName%>')">End Turn</button>
         </div>
 
         <div id="gameBoard">
@@ -48,8 +48,7 @@
             <!-- To select monster type -->
             <div id="monster-types" class="monster-types"></div> 
         </div>
-        
-        <div id="message-container"></div> 
+    
     </div>
     <script src="/client.js"></script>
     
