@@ -61,19 +61,7 @@ fetch('/game-data')
                         break;
                 
                         
-                /*        
-            case 'nextTurn':
-                        console.log(`It's ${data.player}'s turn`);
-                        // Display a message indicating whose turn it is
-                        displayMessage(`It's ${data.player}'s turn`);
-                        break;
-                case 'nextMonster':
-                        console.log(`Place your next monster`);
-                        // Display a message prompting the player to place their next monster
-                        displayMessage(`Place your next monster`);
-                        break;
-                */
-                default: break;
+               default: break;
             }
         };
 
@@ -82,27 +70,7 @@ fetch('/game-data')
             const data = JSON.stringify({ type: 'start-game', gameName, playerName });
             wsServer.send(data);
         }
-        // BUTTON ACTIONS
-        /**
-         * Function to end turn
-         */
-        /*function endTurn(){
-            alert('endTurn');
-            // set data to be json with endTurn type and current player set as player
-            const data = JSON.stringify({ type: 'endTurn', player: currentPlayer });
-            // send data to websocket
-            wsServer.send(data);
-        }*/
-
-        /*function placeMonster(){
-            alert('placeMonster');
-            // ADD some logic for placing monsters on board
-            const row = prompt("Enter the row (0-9) to place your monster:");
-            const col = prompt("Enter the column (0-9) to place your monster:");
-            const monster = prompt("Enter the monster type (vampire, werewolf, ghost):");
-            wsServer.send(JSON.stringify({ type: 'placeMonster', row, col, monster, player: currentPlayer }));
-        }*/
-
+        
         // ADD CLICK EVENT LISENER TO GAME BOARD
         gameBoard.addEventListener('click', (event) => {
             // if cell is clicked
@@ -237,14 +205,6 @@ fetch('/game-data')
             // append cancel placing monster button
             const cancelPlaceMonsterButton = createElement('button', 'btn btn-secondary', 'Cancel Placing Monster', cancelPlacingMonster);
             monsterPlacement.appendChild(cancelPlaceMonsterButton);
-            // append place monster type divs so we can select monster
-            /*const monsterTypesDiv = document.getElementById('monster-types');
-            const vampireButton = createElement('button', 'btn btn-vampire', 'Vampire', addVampire);
-            monsterTypesDiv.appendChild(vampireButton);
-            const warewolfButton = createElement('button', 'btn btn-warewolf', 'Warewolf', addWarewolf);
-            monsterTypesDiv.appendChild(warewolfButton);
-            const ghostButton = createElement('button', 'btn btn-ghost', 'Ghost', addGhost);
-            monsterTypesDiv.appendChild(ghostButton);*/
             const data = JSON.stringify({ type: 'placing-monster', gameName: currentGameName, playerName: currentPlayer });
             wsServer.send(data); // send data to websocket
 
@@ -258,25 +218,7 @@ fetch('/game-data')
             // append back place monster button
             const placeMonsterButton = createElement('button', 'btn btn-primary', 'Place Monster', placeMonster);
             monsterPlacement.appendChild(placeMonsterButton);
-            // clear monster types buttons
-            /*const monsterTypesDiv = document.getElementById('monster-types');
-            monsterTypesDiv.innerHTML = '';*/
         }
-
-        /*function addVampire(){
-            const data = JSON.stringify({ type: 'place-vampire', gameName: currentGameName, playerName: currentPlayer });
-            wsServer.send(data);
-        }
-
-        function addWarewolf(){
-            const data = JSON.stringify({ type: 'place-warewolf', gameName: currentGameName, playerName: currentPlayer });
-            wsServer.send(data);
-        }
-
-        function addGhost(){
-            const data = JSON.stringify({ type: 'place-ghost',  gameName: currentGameName, playerName: currentPlayer });
-            wsServer.send(data);
-        }*/
 
         function createElement(type, classNames, textContent, onClick){
             const el = document.createElement(type);
