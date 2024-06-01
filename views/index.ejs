@@ -15,20 +15,21 @@
             <!-- Display list of all games -->
             <ul class="list">
                 <% for (let gameName in games) { %>
+                    <% let game = games[gameName]; %>
                     <!-- each game in games-->
                     <li>
                         <!-- Game name and number of current players / maximum players-->
-                        <strong>Game Name:</strong> <%= gameName %> --- <span class="players"><%= gameName.currentPlayers %> / <%= gameName.maxPlayers %></span>
+                        <strong>Game Name:</strong> <%= gameName %> --- <span class="players"><%= game.currentPlayers %> / <%= game.maxPlayers %></span>
                         <!-- List players -->
                         <strong>Players:</strong>
                         <ul class="inside-list">
                             <% for (let playerName in games[gameName].players) { %>
                                 <!-- display player name for each player in games-->
-                                <li><%= playerName %>: <%= JSON.stringify(games[gameName].players[playerName]) %></li>
+                                <li><%= playerName %></li>
                             <% } %>
                         </ul> 
                         <!-- if there is available slots to join game -->
-                        <% if(gameName.currentPlayers < 4) { %>
+                        <% if(game.currentPlayers < 4) { %>
                             <!-- show join game button -->
                             <button class="btn btn-primary" onclick="joinGame('<%=gameName%>')">Join Game</button>
                         <% } else { %>

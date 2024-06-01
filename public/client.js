@@ -4,10 +4,6 @@ const url = "ws://localhost:3000";
 const wsServer = new WebSocket(url);
 
 
-const data = JSON.stringify({ type: 'get-game-init'});
-// send data to websocket
-wsServer.send(data);
-
 // get game board
 const gameBoard = document.getElementById("gameBoard");
 
@@ -25,6 +21,11 @@ wsServer.onmessage = (event) => {
     const data = JSON.parse(event.data);
     // based on message type do different things
     switch(data.type){
+        case 'player-joined':
+            // when new player joins game alert and update player info
+            alert('New Player Joined');
+            updatePlayerList(data.games);
+            break;
         case 'initGame':
                 console.log('Game initialised');
                 console.log(data);
@@ -37,15 +38,7 @@ wsServer.onmessage = (event) => {
                 console.log('Board updated'); // log that game board is updated with new data.board
                 createBoard(data.board); // update game board is updated with new data.board
                 break;
-       /* case 'startGame':
-                console.log('Game started');  // log that game started
-                currentPlayer = data.player || clientPlayer; // if is start game set current player
-                createBoard(data.board); // update board
-                isGameStarted = true;
-                // Display a message indicating whose turn it is
-                displayMessage(`It's ${currentPlayer}'s turn`);
-                break;*/
-        case 'nextTurn':
+       case 'nextTurn':
                 console.log(`It's ${data.player}'s turn`);
                 // Display a message indicating whose turn it is
                 displayMessage(`It's ${data.player}'s turn`);
@@ -66,38 +59,24 @@ wsServer.onmessage = (event) => {
 
 // BUTTON ACTIONS
 /**
- * Function to start/reset game.
- * Will set player with player name on start
- */
-function startGame(){
-    // enter name on start of game
-    const player = prompt("Enter your player name:");
-    isGameStarted = true; // set game started to true
-    console.log(player)
-    // set data to be json with startGame type and set player 
-    const data = JSON.stringify({ type: 'startGame', player });
-    // send data to websocket
-    wsServer.send(data);
-}
-/**
  * Function to end turn
  */
-function endTurn(){
+/*function endTurn(){
     alert('endTurn');
     // set data to be json with endTurn type and current player set as player
     const data = JSON.stringify({ type: 'endTurn', player: currentPlayer });
     // send data to websocket
     wsServer.send(data);
-}
+}*/
 
-function placeMonster(){
+/*function placeMonster(){
     alert('placeMonster');
     // ADD some logic for placing monsters on board
     const row = prompt("Enter the row (0-9) to place your monster:");
     const col = prompt("Enter the column (0-9) to place your monster:");
     const monster = prompt("Enter the monster type (vampire, werewolf, ghost):");
     wsServer.send(JSON.stringify({ type: 'placeMonster', row, col, monster, player: currentPlayer }));
-}
+}*/
 
 // ADD CLICK EVENT LISENER TO GAME BOARD
 gameBoard.addEventListener('click', (event) => {
@@ -149,89 +128,97 @@ function displayMessage(message) {
 }
 
 
-// Function to update player list
-function updatePlayerList(players) {
-    const playerListElement = document.getElementById('player-list').getElementsByTagName('ul')[0];
+/**
+ * Function to update player list when new player joins
+ * */
+function updatePlayerList(games) {
+    const playerListElement = document.getElementById('player-list');
     // Clear existing player list HTML
     playerListElement.innerHTML = '';
-    // Create new HTML elements for each player
-    // Reference https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
-    players.forEach(player => {
-        debugger
-        const playerItem = document.createElement('li');
-        playerItem.textContent = player.name;
-        playerItem.classList.add(player.status);
-        playerListElement.appendChild(playerItem);
-    });
+
+    // Iterate over the updated games object
+    for (const gameName in games) {
+        if (games.hasOwnProperty(gameName)) {
+            const players = games[gameName].players;
+            for (const playerName in players) {
+                if (players.hasOwnProperty(playerName)) {
+                    const player = players[playerName];
+                    // Create a list item element for each player
+                    const playerListItem = document.createElement('li');
+                    playerListItem.textContent = `${player.name} status: ${player.status}`;
+                    playerListItem.classList.add(player.status);
+                    playerListElement.appendChild(playerListItem);
+                }
+            }
+        }
+    }
 }
 
-
 // MONSTER LOGIC
-// monster divs
-const monsterPlacement = document.getElementById('monster-placement');
-const monsterInfo = document.getElementById('monsters-info');
-const monsterTypesDiv = document.getElementById('monster-types');
-// butons to place monster
-const placeMonsterButton = createElement('button', 'btn btn-primary', 'Place Monster', placeMonster);
-const cancelPlaceMonsterButton = createElement('button', 'btn btn-secondary', 'Cancel Placing Monster', cancelPlacingMonster);
-// monster information divs
-const availableMonstersDiv = createElement('div', 'available-monsters', null, null);
-const availableMonstersLabel = createElement('span', 'available-monsters-label', 'Available monsters to place: ');
-const availableMonstersCount = document.createTextNode(monsters.filter(monster => monster.location == null).length);
 // monster types selection buttons
-const vampireButton = createElement('button', 'btn btn-vampire', 'Vampire', addVampire);
-const warewolfButton = createElement('button', 'btn btn-warewolf', 'Warewolf', addWarewolf);
-const ghostButton = createElement('button', 'btn btn-ghost', 'Ghost', addGhost);
-   
-
 function updateMonstersDiv(monsters){
+    const monsterPlacement = document.getElementById('monster-placement');
     const availableMonsters = monsters.filter(monster => monster.location == null).length;
     // clear content
     monsterPlacement.innerHTML = '';
     // if there are monsters that can be placed on board
     if(availableMonsters){
+        const placeMonsterButton = createElement('button', 'btn btn-primary', 'Place Monster', placeMonster);
         // append place monster button
         monsterPlacement.appendChild(placeMonsterButton);
     }
     // append monster information
+    const availableMonstersDiv = createElement('div', 'available-monsters', null, null);
     availableMonstersDiv.innerHTML = ''; // clear content
+    const availableMonstersLabel = createElement('span', 'available-monsters-label', 'Available monsters to place: ');
     availableMonstersDiv.appendChild(availableMonstersLabel);
     availableMonstersDiv.appendChild(document.createTextNode(availableMonsters));
-    monsterInfo.appendChild(cancelPlaceMonsterButton);
+    const availableMonstersCount = document.createTextNode(monsters.filter(monster => monster.location == null).length);
 }
  
 function placeMonster(){
+    const monsterPlacement = document.getElementById('monster-placement');
     // clear content
     monsterPlacement.innerHTML = '';
     // append cancel placing monster button
-    monsterPlacement.appendChild(placeMonsterButton);
+    const cancelPlaceMonsterButton = createElement('button', 'btn btn-secondary', 'Cancel Placing Monster', cancelPlacingMonster);
+    monsterPlacement.appendChild(cancelPlaceMonsterButton);
     // append place monster type divs so we can select monster
+    const monsterTypesDiv = document.getElementById('monster-types');
+    const vampireButton = createElement('button', 'btn btn-vampire', 'Vampire', addVampire);
     monsterTypesDiv.appendChild(vampireButton);
+    const warewolfButton = createElement('button', 'btn btn-warewolf', 'Warewolf', addWarewolf);
     monsterTypesDiv.appendChild(warewolfButton);
+    const ghostButton = createElement('button', 'btn btn-ghost', 'Ghost', addGhost);
     monsterTypesDiv.appendChild(ghostButton);
+    const data = JSON.stringify({ type: 'placing-monster' });
+    wsServer.send(data); // send data to websocket
 }
 
 function cancelPlacingMonster(){
+    const monsterPlacement = document.getElementById('monster-placement');
     // clear content
     monsterPlacement.innerHTML = '';
     // append back place monster button
+    const placeMonsterButton = createElement('button', 'btn btn-primary', 'Place Monster', placeMonster);
     monsterPlacement.appendChild(placeMonsterButton);
     // clear monster types buttons
+    const monsterTypesDiv = document.getElementById('monster-types');
     monsterTypesDiv.innerHTML = '';
 }
 
 function addVampire(){
-    const data = JSON.stringify({ type: 'place-vampire', playerName});
+    const data = JSON.stringify({ type: 'place-vampire', gameName, playerName});
     wsServer.send(data);
 }
 
 function addWarewolf(){
-    const data = JSON.stringify({ type: 'place-warewolf', playerName});
+    const data = JSON.stringify({ type: 'place-warewolf', gameName, playerName});
     wsServer.send(data);
 }
 
 function addGhost(){
-    const data = JSON.stringify({ type: 'place-ghost', playerName});
+    const data = JSON.stringify({ type: 'place-ghost', gameName, playerName});
     wsServer.send(data);
 }
 

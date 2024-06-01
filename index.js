@@ -9,7 +9,6 @@ const WebSocket = require('ws');
 
 // IMPORTS
 const { startNewGame, joinExistingGame, games } = require('./game/gamesManager'); // Update the path if necessary
-const { broadcastToAllClients } = require('./game/utility');
 const { MONSTER_STATUS, MONSTER_TYPE} = require('./game/monsters');
 
 //const PORT = (3000); //use port 3000
@@ -73,7 +72,7 @@ wsServer.on('connection', (ws) => {
     console.log('A user connected');
     
     // SEND INITIAL DATA to index
-    const initialData = JSON.stringify({ type: 'initial-data', games, });
+    const initialData = JSON.stringify({ type: 'initial-data', games });
     ws.send(initialData);
     
     // HANDLE WEB SOCKET MESSAGES
@@ -84,14 +83,22 @@ wsServer.on('connection', (ws) => {
         switch(data.type){
             case 'start-new-game':
                     const newGames = startNewGame(data.gameName, data.playerName);
-                    const newGameStartedData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games:newGames })
+                    const newGameStartedData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games:newGames });
                     ws.send(newGameStartedData);
                     break;
             case 'join-game':
                     const updatedGames = joinExistingGame(data.gameName, data.playerName);
                     // send that new game started and game name
-                    const joinGameStartedData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games:updatedGames })
+                    const joinGameStartedData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
                     ws.send(joinGameStartedData);
+                    const newPlayerJoinedData = JSON.stringify({ type: 'player-joined', gameName: data.gameName, playerName: data.playerName, games:updatedGames })
+                    broadcastToAllClients(newPlayerJoinedData, wsServer)
+            case 'placing-monster':
+                    // update board with available placement positions
+                    // return board
+                    //const palcingMonsterData = JSON.stringify({ type: 'proceed-placing-monster', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
+                    //ws.send(joinGameStartedData);
+                    break;
             default: return;
         }
     });
@@ -100,9 +107,19 @@ wsServer.on('connection', (ws) => {
     ws.on('close', () => {
         console.log('A user disconnected');
     });
+
 });
 
-
+// Function to broadcast data to all clients
+function broadcastToAllClients(data, server) {
+    server.clients.forEach(client => {
+        // if they have open connection
+        if (client.readyState === WebSocket.OPEN) {
+            // send updated player list
+            client.send(data);
+        }
+    });
+}
 
 
 

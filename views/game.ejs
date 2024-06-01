@@ -33,21 +33,27 @@
         </div>
     <% }) %>
 </div>
+
 <!-- to display monster info-->
 <div id="monsters-container">
     <!-- To select monster type -->
-    <div id="monsters-placment" class="monster-placment"></div> 
+    <div id="monster-placement" class="monster-placement"></div> 
     <!-- To select monster type -->
     <div id="monsters-info" class="monster-info"></div> 
     <!-- To select monster type -->
-    <div id="monsters-types" class="monster-types"></div> 
+    <div id="monster-types" class="monster-types"></div> 
 </div>
  
 <div id="message-container"></div> 
-<script>
-   
-   // console.log(playerMonsters);
-</script>
 <script src="/client.js"></script>
-
+<!-- Call the updateMonstersDiv method with the provided monsters data -->
+<% if (games[gameName] && games[gameName].players[playerName]) { %>
+    <% const monsters = games[gameName].players[playerName].monsters; %>
+    <% if (monsters) { %>
+        <script>
+            // Call the updateMonstersDiv method with the provided monsters data
+            updateMonstersDiv(<%- JSON.stringify(monsters) %>);
+        </script>
+    <% } %>
+<% } %>
 <%- include("../partials/footer.ejs") -%>
