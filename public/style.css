@@ -53,3 +53,19 @@ body {
 #player-list li.player4 {
     color: teal;
 }
+.display-none{
+    display:none;
+}
+/* Define custom colors for each player */
+.player-1{
+    background-color: #ccccf1;
+}
+.player-2{
+    background-color: #ccf1d9;
+}
+.player-3{
+    background-color: #ebaeae;
+}
+.player-4{
+    background-color: #fbefc0;
+}

@@ -5,9 +5,18 @@ const MONSTER_STATUS = {
 };
 
 const MONSTER_TYPE = {
-    vampire: 'vampire',
-    warewolf: 'warewolf',
-    ghost: 'ghost',
+    vampire: { 
+        id: 'v',
+        value: 'vampire'
+    },
+    warewolf: {
+        id: 'w',
+        value: 'warewolf'
+    },
+    ghost: {
+        id: 'g',
+        value: 'ghost'
+    },
     none: null
 };
 
@@ -30,8 +39,18 @@ function getStartingMonsters (){
     return monsters;
 }
 
+function getMonsterById(monsterId) {
+    for (let key in MONSTER_TYPE) {
+        if (MONSTER_TYPE[key] && MONSTER_TYPE[key].id === monsterId) {
+            return MONSTER_TYPE[key];
+        }
+    }
+    return null; // return null if no monster with the given ID is found
+}
+
 module.exports = { 
     MONSTER_STATUS, 
     MONSTER_TYPE,
     getStartingMonsters, 
+    getMonsterById
 };

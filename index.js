@@ -8,8 +8,14 @@ const path = require('path');
 const WebSocket = require('ws');
 
 // IMPORTS
-const { startNewGame, joinExistingGame, games } = require('./game/gamesManager'); // Update the path if necessary
+const { startNewGame, joinExistingGame, startCurrentGame, games } = require('./game/gamesManager'); // Update the path if necessary
 const { MONSTER_STATUS, MONSTER_TYPE} = require('./game/monsters');
+const {
+    updateBoardAvailableMovement, 
+    addMonsterToBoard,
+    updateBoardMonsterClicked,
+    updateBoardMonsterMoved
+} = require('./game/board');
 
 //const PORT = (3000); //use port 3000
 // either use port 3000 or process.argv[2] from command line specify
@@ -91,13 +97,35 @@ wsServer.on('connection', (ws) => {
                     // send that new game started and game name
                     const joinGameStartedData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
                     ws.send(joinGameStartedData);
-                    const newPlayerJoinedData = JSON.stringify({ type: 'player-joined', gameName: data.gameName, playerName: data.playerName, games:updatedGames })
-                    broadcastToAllClients(newPlayerJoinedData, wsServer)
+                    const newPlayerJoinedData = JSON.stringify({ type: 'player-joined', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
+                    broadcastToAllClients(newPlayerJoinedData, wsServer);
+            case 'start-game':
+                    const currentGames = startCurrentGame(games, data.gameName, data.playerName);
+                    const announcGameStarted =  JSON.stringify({ type: 'current-game-started', gameName: data.gameName, playerName: data.playerName, games:currentGames });
+                    broadcastToAllClients(announcGameStarted, wsServer);
+                    break;
             case 'placing-monster':
-                    // update board with available placement positions
-                    // return board
-                    //const palcingMonsterData = JSON.stringify({ type: 'proceed-placing-monster', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
-                    //ws.send(joinGameStartedData);
+                    // update board with available placement positions based on player whos turn it is
+                    const updatedGamesWithNewBoard = updateBoardAvailableMovement(games, data.gameName, data.playerName);
+                    // add turn logic
+                    // return updated board
+                    const palcingMonsterData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:updatedGamesWithNewBoard, isAddingMonster:true, isMovingMonster:false});
+                    ws.send(palcingMonsterData);
+                    break;
+            case 'add-monster':
+                    const returnedGames = addMonsterToBoard(games, data.gameName, data.playerName, data.row, data.col, data.monster);
+                    const addingMonsterData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:returnedGames, isAddingMonster:false, isMovingMonster:false });
+                    ws.send(addingMonsterData);
+                    break;
+            case 'monster-clicked':
+                    const monsterClickedGames = updateBoardMonsterClicked(games, data.gameName, data.playerName, data.row, data.col, data.monster);
+                    const monsterClickedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:monsterClickedGames, isAddingMonster:false, isMovingMonster:true });
+                    ws.send(monsterClickedData);
+                    break;
+            case 'monster-moved':
+                    const monsterMovedGames = updateBoardMonsterMoved(games, data.gameName, data.playerName, data.row, data.col);
+                    const monsterMovedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:monsterMovedGames, isAddingMonster:false, isMovingMonster:false });
+                    ws.send(monsterMovedData);
                     break;
             default: return;
         }

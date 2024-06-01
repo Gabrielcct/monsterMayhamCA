@@ -3,6 +3,7 @@
 const {PLAYER_SIDES, PLAYER_STATUS} = require('./player');
 const {getStartingMonsters } = require('./monsters');
 const {createBoard} = require('./board');
+
 let games = {}; // hold all currently played gamse
 
 /**
@@ -22,17 +23,20 @@ function startNewGame(gameName, playerName){
         board: createBoard(), // Create starting board
         players:{
             [playerName]: {
-                id: 0,
+                id: 1,
                 name: playerName,
                 placedMonsters: 0, // monsters polaced on board
                 availableMonsters: 10, // available monsters to place
                 monsters: getStartingMonsters(), // array of monsters
                 status: PLAYER_STATUS.waiting, // set initial status as waiting
-                side: getPlayerSide(1) // Assign player to a side of the grid - first player to top side
+                side: getPlayerSide(1), // Assign player to a side of the grid - first player to top side
+                turn: 1 // set as first turn
             },
         }, 
         maxPlayers: 4,
-        currentPlayers: 1
+        currentPlayers: 1,
+        isGameStarted: false,
+        movingMonster: null
     }
     return games;
 }
@@ -62,14 +66,14 @@ function joinExistingGame(gameName, playerName){
     const playerNumber = games[gameName].currentPlayers + 1;
     // add player 
     games[gameName].players[playerName] = {
-        id: 0,
+        id: playerNumber,
         name: playerName,
         placedMonsters: 0, // monsters polaced on board
         availableMonsters: 10, // available monsters to place
         monsters: getStartingMonsters(), // array of monsters
         status: PLAYER_STATUS.waiting, // set initial status as waiting
         side: getPlayerSide(playerNumber) // Assign player to a side of the grid - first player to top side
-    }
+    };
     // update current players
     games[gameName].currentPlayers++;
     return games;
@@ -92,8 +96,14 @@ function getPlayerSide(playerNumber){
     }
 }
 
+function startCurrentGame(games, gameName, playerName){
+    games[gameName].isGameStarted = true;
+    return games;
+}
+
 module.exports = { 
     startNewGame, 
     joinExistingGame, 
+    startCurrentGame,
     games
 };
