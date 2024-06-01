@@ -240,33 +240,129 @@ function monsterAvailableMovement(games, gameName, playerName, row, col) {
             }
         }
     }
-
     return games;
 }
 
-/**
- * Check if there are unmoved monsters
- */
-function hasUnmovedMonsters(games, gameName, playerName) {
-    const board = games[gameName].board;
-    const player = games[gameName].players[playerName];
-    const playerId = player.id;
+function onMonsterAttack(games, gameName, playerName, row, col, monster, movingMonster) {
+    let gameBoard = games[gameName].board;
+    let playerId = games[gameName].players[playerName].id;
 
-    for (let row = 0; row < board.length; row++) {
-        for (let col = 0; col < board[row].length; col++) {
-            const cell = board[row][col];
-            if (cell && cell.value && cell.class.includes(`player-${playerId}`) && !cell.isMovedThisTurn) {
-                // Found an unmoved monster belonging to the player
-                return true;
+    // Clear all previous placement indicators
+    for (let i = 0; i < gameBoard.length; i++) {
+        for (let j = 0; j < gameBoard[i].length; j++) {
+            if (gameBoard[i][j] && gameBoard[i][j].value === 'click') {
+                gameBoard[i][j] = null;
             }
         }
     }
 
-    // No unmoved monsters found for the player
-    return false;
+    // Check if the target cell is within attack range
+    // Reference https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/abs
+    const dRow = Math.abs(row - movingMonster.row);
+    const dCol = Math.abs(col - movingMonster.col);
+
+    if ((dRow === 0 || dCol === 0) || (dRow <= 2 && dCol <= 2 && dRow === dCol)) {
+        const targetCell = gameBoard[row][col];
+        if (targetCell && targetCell.value) {
+            // reference :https://stackoverflow.com/questions/4659492/using-javascripts-parseint-at-end-of-string
+            const targetMonsterOwner = parseInt(targetCell.class.match(/player-(\d+)/)[1], 10);
+            //const targetMonsterType = targetCell.class.split(' ')[1];
+            const targetMonsterType = monster;
+            if (targetMonsterOwner !== playerId) {
+                const movingMonsterType = movingMonster.monster;
+
+                // Resolve the attack based on monster types
+                let removeTargetMonster = false;
+                let removeMovingMonster = false;
+                /**
+                 * Attack resolve logic
+                 * If there’s a vampire and a werewolf, the werewolf is removed
+                 * If there’s a werewolf and a ghost, the ghost is removed
+                 * If there’s a ghost and a vampire, the vampire is removed
+                 * If there’s two of the same kind of monster, both are removed
+                 */
+                if (movingMonsterType === 'v') {
+                    switch (targetMonsterType) {
+                        case 'w':
+                            removeTargetMonster = true;
+                            break;
+                        case 'g':
+                            removeMovingMonster = true;
+                            break;
+                        case 'v':
+                            removeTargetMonster = true;
+                            removeMovingMonster = true;
+                            break;
+                        default:
+                            break;
+                    }
+                } else if (movingMonsterType === 'g') {
+                    switch (targetMonsterType) {
+                        case 'w':
+                            removeMovingMonster = true;
+                            break;
+                        case 'g':
+                            removeTargetMonster = true;
+                            removeMovingMonster = true;
+                            break;
+                        case 'v':
+                            removeTargetMonster = true;
+                            break;
+                        default:
+                            break;
+                    }
+                } else if (movingMonsterType === 'w') {
+                    switch (targetMonsterType) {
+                        case 'w':
+                            removeTargetMonster = true;
+                            removeMovingMonster = true;
+                            break;
+                        case 'g':
+                            removeTargetMonster = true;
+                            break;
+                        case 'v':
+                            removeMovingMonster = true;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                if (removeTargetMonster) {
+                    gameBoard[row][col] = null;
+                }
+
+                if (removeMovingMonster) {
+                    gameBoard[movingMonster.row][movingMonster.col] = null;
+                } else {
+                    // Move the attacking monster to the target cell
+                    gameBoard[row][col] = {
+                        value: movingMonster.monster,
+                        class: `player-${playerId} ${movingMonster.monster}`,
+                        isMovedThisTurn: true,
+                        location: {
+                            row: row,
+                            col: col
+                        }
+                    };
+
+                    // Clear the original cell
+                    gameBoard[movingMonster.row][movingMonster.col] = null;
+                }
+
+                // Update the game state
+                games[gameName].board = gameBoard;
+
+                console.log(`Monster ${movingMonster.monster} attacked monster at (${row}, ${col})`);
+                console.log('Result is removeMovingMonster: ' + removeMovingMonster);
+            }
+        }
+    } else {
+        console.log('Invalid attack range');
+    }
+
+    return games;
 }
-
-
 
 // Reference https://www.sitepoint.com/understanding-module-exports-exports-node-js/
 module.exports = { 
@@ -276,5 +372,5 @@ module.exports = {
     addMonsterToBoard ,
     updateBoardMonsterClicked,
     updateBoardMonsterMoved,
-    hasUnmovedMonsters
+    onMonsterAttack
 };

@@ -14,9 +14,10 @@ fetch('/game-data')
         let isMovingMonster = false;
         let isAddingMonster = false;
         let isPreventAddingMonsters = false;
-
+        let movingMonster = null;
         let isGameOver = false; // check if game finished
         
+        /** ********************************************   WEBSOCKET MESSAGES  ******************************************** **/
         // EVENTS
         // This will handle web socket messages (events)
         wsServer.onmessage = (event) => {
@@ -50,6 +51,9 @@ fetch('/game-data')
                     // update player list
                     const playerListHTML4 = updatePlayerList(data.games, data.gameName);
                     document.getElementById('player-list').innerHTML = `<ul>${playerListHTML4}</ul>`;
+                    if(data.movingMonster !== undefined){
+                        movingMonster = data.movingMonster;
+                    }
                     break;
                 case 'new-monster-added':
                     // if monster was added reset it
@@ -71,7 +75,7 @@ fetch('/game-data')
             }
         };
 
-        // START GAME
+        /** ********************************************   ACTION BUTTONS   ******************************************** **/
         window.startGame = function (gameName, playerName){
             if (Object.keys(games[gameName].players).length < 2) {
                 alert('You need a minimum of two players to start the game');
@@ -98,7 +102,8 @@ fetch('/game-data')
             const data = JSON.stringify({ type: 'end-turn', gameName, playerName });
             wsServer.send(data); // Send data to the WebSocket server
         };
-        
+
+        /** ********************************************  CLICK EVENT LISTENER   ******************************************** **/
         // ADD CLICK EVENT LISENER TO GAME BOARD
         gameBoard.addEventListener('click', (event) => {
             // Check if it's the current player's turn
@@ -135,24 +140,37 @@ fetch('/game-data')
                         wsServer.send(data); // send data to websocket
                     }
                 } else if (['v', 'w', 'g'].includes(cellValue)) {
-                    // allow clicking only on player monster
                     
-                    if(event.target.dataset.player != playerName){
+                    
+                    // allow clicking only on player monster unless we are attacking
+                    if(!isMovingMonster && event.target.dataset.player != playerName){
                         alert('You can move only your monsters');
                         return;
                     }
-                    if(event.target.dataset.isMovedThisTurn == "true"){
+                    // check if monster moved this turn before allowing selecting it
+                    if(!isMovingMonster && event.target.dataset.isMovedThisTurn == "true"){
                         alert('Monster already moved this turn!');
                         return;
                     }
-                    isMovingMonster = true;
-                    // Send the current monster type to the server
-                    const data = JSON.stringify({ type: 'monster-clicked', gameName, playerName, row, col, monster: cellValue });
-                    wsServer.send(data); // send data to websocket
+
+                    // if we are already moving monster so it is attack on enemy monster
+                    // and is enemy monster
+                    if(isMovingMonster && event.target.dataset.player != playerName){
+                        const data = JSON.stringify({ type: 'monster-attacked', gameName, playerName, row, col, monster: cellValue, movingMonster });
+                        wsServer.send(data); // send data to websocket    
+                    }else{
+                        // else is first click on monster on board so we are preparing to move it(selecting)
+                        // set we are moving monster
+                        isMovingMonster = true;
+                        // Send the current monster type to the server
+                        const data = JSON.stringify({ type: 'monster-clicked', gameName, playerName, row, col, monster: cellValue });
+                        wsServer.send(data); // send data to websocket
+                    }
                 }
             }
         });
 
+        /** ********************************************  UPDATE BOARD   ******************************************** **/
         /**
          * Create a new board based on board on server
          * Used to update board on front end when there are changes
@@ -191,6 +209,7 @@ fetch('/game-data')
             });
         }
 
+        /** ******************************************** PLAYER LIST  ******************************************** **/
         /**
          * Function to update player list when new player joins
          * */
@@ -207,16 +226,7 @@ fetch('/game-data')
         }
 
 
-        // view LOGIC
-        function displayGameArea(){
-            const startGameButtonDiv = document.getElementById('start-game-button');
-            startGameButtonDiv.innerHTML = '';
-            const gameArea = document.getElementById('game-area');
-            gameArea.classList.remove('display-none');
-        }
-
-        // MONSTER LOGIC
-        // monster types selection buttons
+        /** ******************************************** PLACING MONSTER  ******************************************** **/
         function updateMonstersDiv(monsters){
             const monsterPlacement = document.getElementById('monster-placement');
             const availableMonsters = monsters.filter(monster => monster.location == null).length;
@@ -274,6 +284,19 @@ fetch('/game-data')
             monsterPlacement.appendChild(placeMonsterButton);
         }
 
+        /** ********************************************  DISPLAY GAME AREA  ******************************************** **/
+        function displayGameArea(){
+            const startGameButtonDiv = document.getElementById('start-game-button');
+            startGameButtonDiv.innerHTML = '';
+            const gameArea = document.getElementById('game-area');
+            gameArea.classList.remove('display-none');
+        }
+
+        /** ******************************************** HELPERS FOR VIEW ******************************************** **/
+        /**
+         * Create element. If is button add function onclick.
+         * Return created element
+        */
         function createElement(type, classNames, textContent, onClick){
             const el = document.createElement(type);
             el.className = classNames;
@@ -285,7 +308,7 @@ fetch('/game-data')
             return el;
         }
 
-       // TRACK WEB SOCKET SERVER 
+        /** ******************************************** TRACK WEB SOCKET SERVER ******************************************** **/
         wsServer.onopen = () => {
             console.log('Connected to WebSocket server');
         };

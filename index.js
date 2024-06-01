@@ -17,7 +17,7 @@ const {
     addMonsterToBoard,
     updateBoardMonsterClicked,
     updateBoardMonsterMoved,
-    hasUnmovedMonsters,
+    onMonsterAttack,
     clearMonsterAvailableMovement
 } = require('./game/board');
 
@@ -157,12 +157,18 @@ wsServer.on('connection', (ws, req) => {
                     break;
             case 'monster-clicked':
                     const monsterClickedGames = updateBoardMonsterClicked(games, data.gameName, data.playerName, data.row, data.col, data.monster);
-                    const monsterClickedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:monsterClickedGames, isAddingMonster:false, isMovingMonster:true });
+                    const movingMonster = {
+                        monster: data.monster,
+                        row: data.row,
+                        col: data.col, 
+                    }
+                    const monsterClickedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:monsterClickedGames, isAddingMonster:false, isMovingMonster:true, movingMonster });
                     ws.send(monsterClickedData);
                     break;
             case 'monster-moved':
+                    const movedMonster = null;
                     const monsterMovedGames = updateBoardMonsterMoved(games, data.gameName, data.playerName, data.row, data.col);
-                    const monsterMovedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:monsterMovedGames, isAddingMonster:false, isMovingMonster:false });
+                    const monsterMovedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:monsterMovedGames, isAddingMonster:false, isMovingMonster:false, movingMonster:movedMonster });
                     //ws.send(monsterMovedData);
                     // send to all game players
                     sendToGamePlayers(data.gameName, monsterMovedData);
@@ -173,6 +179,13 @@ wsServer.on('connection', (ws, req) => {
                     const endTurnData = JSON.stringify({ type: 'turn', gameName: data.gameName, playerName: data.playerName, games:endTurnGames, isAddingMonster:false, isMovingMonster:false });
                     sendToGamePlayers(data.gameName, endTurnData);
                     break;
+            case 'monster-attacked':
+                    const monsterAttackedUpdatedGames = onMonsterAttack(games, data.gameName, data.playerName, data.row, data.col, data.monster, data.movingMonster);
+                    const monsterAttackedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:monsterAttackedUpdatedGames, isAddingMonster:false, isMovingMonster:false });
+                    sendToGamePlayers(data.gameName, monsterAttackedData);
+                    break;
+            case 'game-over':
+                    break;    
             default: return;
         }
     });
