@@ -82,15 +82,23 @@ function updateGamesList(games) {
         for (let gameName in games) {
             let game = games[gameName];
             const li = document.createElement('li');
+            li.className = 'pl-list'
             const playersList = Object.keys(game.players).join(', ');
 
             li.innerHTML = `
-                <strong>Game Name:</strong> ${gameName} --- <span class="players">${game.currentPlayers} / ${game.maxPlayers}</span>
-                <div class="status">Is game in progress: ${game.isGameStarted}</div>
-                <strong>Players:</strong>
-                <ul class="inside-list">
-                    ${playersList}
-                </ul>`;
+                <div class="games-display">
+                    <div class="games-display-row top">
+                        <strong>Game Name:</strong> ${gameName}  <span class="players"> Players: ${game.currentPlayers} / ${game.maxPlayers}</span>
+                        <div class="status">Is game in progress: ${game.isGameStarted}</div>
+                    </div>
+                    <div class="games-display-row bottom">
+                        <div class=list-players>Players:
+                            <ul class="inside-list">
+                                ${playersList}
+                            </ul>
+                        </div>
+                    </div>
+                </div>`;
 
             if (game.currentPlayers < 4 && !game.isGameStarted) {
                 const joinButton = document.createElement('button');
@@ -104,6 +112,7 @@ function updateGamesList(games) {
                 fullGameSpan.classList.add('full-game');
                 li.appendChild(fullGameSpan);
             }
+            
 
             playedGamesContainer.appendChild(li);
         }

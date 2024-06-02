@@ -16,7 +16,10 @@ fetch('/game-data')
         let isPreventAddingMonsters = false;
         let movingMonster = null;
         let isGameOver = false; // check if game finished
-        
+
+        //  update the player list
+        const playerListHTML1 = updatePlayerList(games, gameName);
+        document.getElementById('player-list').innerHTML = `<ul>${playerListHTML1}</ul>`;
         /** ********************************************   WEBSOCKET MESSAGES  ******************************************** **/
         // EVENTS
         // This will handle web socket messages (events)
@@ -216,10 +219,13 @@ fetch('/game-data')
         function updatePlayerList(games, gameName) {
             let playerListHTML = '';
             const players = games[gameName].players;
-
             for (let playerName in players) {
                 let player = players[playerName];
-                playerListHTML += `<li class="${player.status}">${player.name} status: ${player.status}</li>`;
+                playerListHTML += `
+                    <li class="${player.status}">Player name1 : <strong>${player.name}</strong> 
+                        <span class="status">status: <span class="capitalise">${player.status}</span></span> 
+                        <span class="available-monsters">Monsters to place: ${player.availableMonsters}</span>
+                    </li>`;
             }
 
             return playerListHTML;

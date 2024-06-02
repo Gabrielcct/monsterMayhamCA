@@ -1,8 +1,4 @@
 <%- include("../partials/head.ejs") -%>
-<!-- Title -->
-<h1>Monster Mayhem</h1>
-<br/>
-<br/>
 
 <!-- Games that are played -->
 <div id="played-games" class="played-games">
@@ -19,8 +15,12 @@
                     <!-- each game in games-->
                     <li>
                         <!-- Game name and number of current players / maximum players-->
-                        <strong>Game Name:</strong> <%= gameName %> --- <span class="players"><%= game.currentPlayers %> / <%= game.maxPlayers %></span>
-                        <div class="status">Is game in progress:<%= game.isGameStarted %></div>
+                        <div class="games-display">
+                            <strong>Game Name: </strong> <%= gameName %> --- <span class="players"> Players: <%= game.currentPlayers %> / <%= game.maxPlayers %></span>
+                            <div class="status">Is game in progress:<%= game.isGameStarted %></div>
+                        </div>
+                        
+                        
                         <!-- List players -->
                         <strong>Players:</strong>
                         <ul class="inside-list">

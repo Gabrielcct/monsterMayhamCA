@@ -1,11 +1,8 @@
 <%- include("../partials/head.ejs") -%>
-<h1>Monster Mayhem</h1>
-<br/>
-<br/>
 <h2>Game name : <%= gameName %></h2>
 <h2> Welcome <%= playerName %></h2>
 
-<div id="player-list">
+<div id="player-list" class="pl-list">
     <ul>
         <% for (let playerName in games[gameName].players) { %>
             <% let player = games[gameName].players[playerName]; %>
@@ -18,13 +15,16 @@
         <button id="start-game" class="btn btn-primary" onclick="startGame('<%=gameName%>', '<%=playerName%>')">Start Game</button>
     </div>
 <% } %>
-    <div id="game-area" class="display-none">
-        <div>
-            <!--<button id="placeMonster" class="btn btn-secondary" onclick="placeMonster()">Place Monster</button>-->
+    <div id="game-area" class="game-area display-none">
+        <div id="monster-info" class="monster-info"></div> 
+        <div class="top-game-area">
+            <!-- To place monsters -->
+            <div id="monster-placement" class="monster-placement"></div> 
             <button id="endTurn" class="btn btn-danger" onclick="endTurn('<%=gameName%>', '<%=playerName%>')">End Turn</button>
         </div>
+        
 
-        <div id="gameBoard">
+        <div id="gameBoard" class="game-board">
             
             <% games[gameName].board.forEach((row, rowIndex) => { %>
                 <!-- Each row -->
@@ -39,16 +39,6 @@
             <% }) %>
         </div>
 
-        <!-- to display monster info-->
-        <div id="monsters-container">
-            <!-- To select monster type -->
-            <div id="monster-placement" class="monster-placement"></div> 
-            <!-- To select monster type -->
-            <div id="monsters-info" class="monster-info"></div> 
-            <!-- To select monster type -->
-            <div id="monster-types" class="monster-types"></div> 
-        </div>
-    
     </div>
     <script src="/client.js"></script>
     

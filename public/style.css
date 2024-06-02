@@ -1,5 +1,6 @@
 body {
     font-family: Arial, sans-serif;
+    margin: 0;
 }
 
 .board-row{
@@ -54,7 +55,95 @@ body {
     color: teal;
 }
 .display-none{
-    display:none;
+    display:none!important;
+}
+
+.btn{
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 900;
+    border: none;
+}
+.btn-primary{
+    color:white;
+    background-color: #1a70c9;
+}
+.btn-primary:hover{
+    cursor: pointer;
+    background-color: #09539f;
+}
+
+.btn-danger{
+    color:white;
+    background-color: #df1a1a;
+}
+.btn-danger:hover{
+    cursor: pointer;
+    background-color: #b30c0c;
+}
+
+.btn-secondary{
+    color:white;
+    background-color: #099d15;
+}
+.btn-secondary:hover{
+    cursor: pointer;
+    background-color: #066f0f;
+}
+
+.container{
+    width: 800px;
+    margin-left:auto;
+    margin-right:auto;
+    padding: 5px 15px;
+}
+
+.title-area{
+    text-align: center;
+    background-color: #1a70c9;
+    padding: 25px 25px;
+    color: white;
+    margin-bottom: 25px;
+}
+
+.played-games{
+    padding: 25px;
+    border: 1px solid #8ccef3;
+    box-shadow: 1px 1px 13px 2px #1a70c929;
+}
+.status{
+    padding-left: 15px;
+}
+.pl-list{
+    display: flex;
+    flex-direction: row;
+    border: 1px solid #8080803b;
+    padding: 15px;
+    background-color: #dfefff;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.games-display{
+    display: flex;
+    flex-direction:column;
+}
+.games-display-row{
+    display: flex;
+    justify-items: center;
+    align-items: center;
+}
+.list-players{
+    width: 100%;
+    display: flex;
+    justify-content: end;
+    align-items: center;
+    font-size: 12px;
+    color: #12811b;
+}
+.players{
+    padding-left: 20px;
 }
 /* Define custom colors for each player */
 .player-1{
@@ -68,4 +157,35 @@ body {
 }
 .player-4{
     background-color: #fbefc0;
+}
+
+h2{
+    text-align: center;
+}
+.capitalise{
+    text-transform: capitalize;
+}
+
+.game-area{
+    padding: 25px;
+    text-align: end;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.top-game-area{
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+}
+.game-board{
+    margin-top: 14px;
+    box-shadow: 1px 1px 20px 3px #1a70c959;
+}
+.new-game{
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    margin-top: 20px;
 }
