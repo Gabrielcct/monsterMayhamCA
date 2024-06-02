@@ -17,6 +17,8 @@
 <% } %>
     <div id="game-area" class="game-area display-none">
         <div id="monster-info" class="monster-info"></div> 
+        <!-- Shwo if player is playing-->
+        <div id="is-my-turn" class="is-my-turn"></div>
         <div class="top-game-area">
             <!-- To place monsters -->
             <div id="monster-placement" class="monster-placement"></div> 
@@ -39,10 +41,11 @@
             <% }) %>
         </div>
 
+        <div id="surrender-button" class="surrender-button">
+            <button id="surrender-game" class="btn btn-warning" onclick="surrender('<%=gameName%>', '<%=playerName%>')">Surrender</button>
+        </div>
     </div>
     <script src="/client.js"></script>
-    <div id="surrender-button">
-        <button id="start-game" class="btn btn-danger" onclick="surrender('<%=gameName%>', '<%=playerName%>')">Surrender</button>
-    </div>
+    
     
 <%- include("../partials/footer.ejs") -%>

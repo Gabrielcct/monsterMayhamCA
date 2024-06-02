@@ -4,6 +4,7 @@ fetch('/game-data')
         // set variables get from server
         const gameName = data.gameName;
         const playerName = data.playerName;
+        const playerClass= data.playerClass;
         let games = data.games;
         // new websocket -- for game
         const url = `ws://localhost:3000/game/${gameName}`;
@@ -84,7 +85,7 @@ fetch('/game-data')
                     break;
                 case 'game-over':
                         alert('Game over');
-                        
+
                         games = data.games; 
                         console.log(playerName)
                         console.log(games[data.gameName].players)
@@ -294,14 +295,37 @@ fetch('/game-data')
             for (let playerName in players) {
                 let player = players[playerName];
                 playerListHTML += `
-                    <li class="${player.status}">Player name1 : <strong>${player.name}</strong> 
-                        <span class="status">status: <span class="capitalise">${player.status}</span></span> 
-                        <span class="available-monsters">Monsters to place: ${player.availableMonsters}</span>
+                    <li class="${player.status}">Player name : <strong>${player.name}</strong> 
+                        <span class="status">Status: <span class="uppercase"><strong>${player.status}</strong></span></span> 
+                        <span class="available-monsters">Monsters to place: <strong>${player.availableMonsters}</strong></span>
+                        <span class='m-l-25 player-color player-${player.id}'></span>
                     </li>`;
             }
-
+            updateWhoIsPlayingView(games, gameName);
             return playerListHTML;
         }
+
+        function updateWhoIsPlayingView(games, gameName){
+            let isMyTurnDiv = document.getElementById('is-my-turn');
+            if(!isMyTurnDiv){
+                return;
+            }
+            isMyTurnDiv.innerHTML = '';
+            if(games[gameName].players[playerName].status == 'waiting'){
+                isMyTurnDiv.innerHTML = ` WAITING PLAYERS ... `; 
+                if(isMyTurnDiv.classList.contains('green')){
+                    isMyTurnDiv.classList.remove('green');
+                }
+                isMyTurnDiv.classList.add('red');
+            }else{
+                isMyTurnDiv.innerHTML = ` MY TURN `; 
+                if(isMyTurnDiv.classList.contains('red')){
+                    isMyTurnDiv.classList.remove('red');
+                }
+                isMyTurnDiv.classList.add('green');
+            }
+        }
+       
 
 
         /** ******************************************** PLACING MONSTER  ******************************************** **/

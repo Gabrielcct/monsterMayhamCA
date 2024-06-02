@@ -32,10 +32,14 @@ body {
 #player-list li.playing {
     color: green;
     font-weight: bold;
+    display: flex;
+    align-items: center;
 }
 
 #player-list li.waiting {
     color: red;
+    display: flex;
+    align-items: center;
 }
 
 /* Define custom colors for each player */
@@ -112,7 +116,10 @@ body {
     box-shadow: 1px 1px 13px 2px #1a70c929;
 }
 .status{
-    padding-left: 15px;
+    padding-left: 25px;
+}
+.available-monsters{
+    margin-left:25px;
 }
 .pl-list{
     display: flex;
@@ -167,6 +174,9 @@ h2{
 }
 .capitalise{
     text-transform: capitalize;
+}
+.uppercase{
+    text-transform: uppercase;
 }
 
 .game-area{
@@ -253,4 +263,41 @@ input{
 }
 .logout-button{
     border:1px solid white;
+}
+.is-my-turn{
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    padding: 6px 17px;
+}
+.green{
+    color: #14af45;
+    border: 1px solid #12b312;
+}
+.red{
+    color: #df1a1a;
+    border: 1px solid #df1a1a;
+}
+
+.surrender-button{
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    width: 70%;
+    margin-top: 25px;
+}
+.btn-warning{
+    color: #000000;
+    background-color: #ffffff;
+    border: 1px solid black;
+}
+.btn-warning:hover{
+    cursor: pointer;
+    color: #ffffff;
+    background-color: black;
+    border: 1px solid ffffff;
+}
+
+.m-l-25{
+    margin-left: 25px;
 }
