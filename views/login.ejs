@@ -1,0 +1,27 @@
+<%- include("../partials/head.ejs") -%>
+    <h2> Login </h2>
+    <% if (error) { %>
+        <p style="color: red;"><%= error %></p>
+    <% } %>
+    <div class="form-area pl-list">
+        <form action="/login" class="" method="post">
+            <div class="form-row">
+                <label for="username">Username:</label>
+                <input type="text" name="username">
+            </div>
+            <div class="form-row">
+                <label for="password">Password:</label>
+                <input type="password" name="password">
+            </div>
+            <div class="form-row form-button">
+                <button id="message" class="btn btn-secondary form-button" type="submit" >Login</button>
+            </div>
+        </form>
+    </div>
+    <form action="/register" class="" method="get">
+        <div class="form-row form-button">
+            <button id="message" class="btn btn-primary " type="submit" >Register</button>
+        </div>
+    </form>
+
+<%- include("../partials/footer.ejs") -%>

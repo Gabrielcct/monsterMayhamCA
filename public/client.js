@@ -79,6 +79,14 @@ fetch('/game-data')
         };
 
         /** ********************************************   ACTION BUTTONS   ******************************************** **/
+        /**
+         * Function that will start the game. 
+         * Game can start when at least two players join
+         * No other players can join after game started
+         * Gaming area is revealed after game starts
+         * @param {*} gameName -- current game name 
+         * @param {*} playerName -- current player name
+        */
         window.startGame = function (gameName, playerName){
             if (Object.keys(games[gameName].players).length < 2) {
                 alert('You need a minimum of two players to start the game');
@@ -87,14 +95,20 @@ fetch('/game-data')
             const data = JSON.stringify({ type: 'start-game', gameName, playerName });
             wsServer.send(data);
         }
-        // Function to end the turn
+
+        /**
+         * Function to end the turn. Only player who is playing can end turn.
+         * If there are still moving pieces turn can't end
+         * @param {*} gameName -- current game name 
+         * @param {*} playerName - current player name
+         */
         window.endTurn = function (gameName, playerName) {
             // Check if it's the current player's turn
             if (games[gameName].players[playerName].status == 'waiting') {
                 alert("It's not your turn!");
                 return; // Exit the function if it's not the current player's turn
             }
-
+            // player needs to finish his movement first
             if(isAddingMonster || isMovingMonster){
                 alert('First cancel or finish your movement');
                 return;
@@ -106,8 +120,29 @@ fetch('/game-data')
             wsServer.send(data); // Send data to the WebSocket server
         };
 
+        /**
+         * Function to surrender the game
+         * @param {*} gameName -- current game name 
+         * @param {*} playerName - current player name
+         */
+        window.surrender = function (gameName,playerName){
+            // ask to confirm surrender
+            //Reference: https://stackoverflow.com/questions/9334636/how-to-create-a-dialog-with-ok-and-cancel-options
+            const isSurrender = confirm("Are you sure you want to surrender? Game will end and you will lose.");
+            // if no return
+            if(!isSurrender){
+                return;
+            }
+            // else procede with end game 
+            const data = JSON.stringify({ type: 'surrender', gameName, playerName });
+            wsServer.send(data); // Send data to the WebSocket server
+        }
+
         /** ********************************************  CLICK EVENT LISTENER   ******************************************** **/
         // ADD CLICK EVENT LISENER TO GAME BOARD
+        /**
+         * Will attach event listener to the board and listen for click events
+         */
         gameBoard.addEventListener('click', (event) => {
             // Check if it's the current player's turn
             if (games[gameName].players[playerName].status == 'waiting') {
@@ -120,11 +155,13 @@ fetch('/game-data')
                 const col = event.target.dataset.col; // get column clicked
                 // Check the value of the cell
                 const cellValue = event.target.innerText;
-                
+                // if clicked cell has value click
                 if (cellValue === 'click') {
+                    // if player is adding monsters
                     if(isAddingMonster){
                         // prompt user to enter monster type
                         const monster = prompt("Enter 'v' for vampire, 'w' for werewolf, 'g' for ghost, or 'c' to cancel:");
+                        // if monster is not added correctly
                         if (monster === 'c' || !['v', 'w', 'g'].includes(monster)) {
                             alert('Placement canceled');
                             cancelPlacingMonster();
@@ -142,8 +179,9 @@ fetch('/game-data')
                         const data = JSON.stringify({ type: 'monster-moved', gameName, playerName, row, col });
                         wsServer.send(data); // send data to websocket
                     }
+
                 } else if (['v', 'w', 'g'].includes(cellValue)) {
-                    
+                   // else if player clicked on cell with monster on 
                     
                     // allow clicking only on player monster unless we are attacking
                     if(!isMovingMonster && event.target.dataset.player != playerName){
@@ -233,6 +271,10 @@ fetch('/game-data')
 
 
         /** ******************************************** PLACING MONSTER  ******************************************** **/
+        /**
+         * Updates front end with monster
+         * @param {*} monsters 
+         */
         function updateMonstersDiv(monsters){
             const monsterPlacement = document.getElementById('monster-placement');
             const availableMonsters = monsters.filter(monster => monster.location == null).length;
@@ -247,11 +289,16 @@ fetch('/game-data')
             // append monster information
             const availableMonstersDiv = createElement('div', 'available-monsters', null, null);
             availableMonstersDiv.innerHTML = ''; // clear content
+            const monsterInfoDiv = document.getElementById('monsters-info');
+            
             const availableMonstersLabel = createElement('span', 'available-monsters-label', 'Available monsters to place: ');
             availableMonstersDiv.appendChild(availableMonstersLabel);
             availableMonstersDiv.appendChild(document.createTextNode(availableMonsters));
+            monsterInfoDiv.appendChild(availableMonstersDiv)
         }
-        
+        /**
+         * On place monster clicked
+        */
         function placeMonster(){
             if (games[gameName].players[playerName].status == 'waiting') {
                 alert("It's not your turn!");
@@ -272,7 +319,9 @@ fetch('/game-data')
             wsServer.send(data); // send data to websocket
 
         }
-
+        /**
+        * On cacnel placing monster 
+        */
         function cancelPlacingMonster(){
             isAddingMonster = false;
             updatePlaceMonsterView();
@@ -280,6 +329,9 @@ fetch('/game-data')
             wsServer.send(data); // send data to websocket
         }
 
+        /**
+         * Updates view
+         */
         function updatePlaceMonsterView(){
             isAddingMonster = false;
             const monsterPlacement = document.getElementById('monster-placement');
@@ -291,6 +343,9 @@ fetch('/game-data')
         }
 
         /** ********************************************  DISPLAY GAME AREA  ******************************************** **/
+        /**
+         * After clicking start remove display none from gaming area
+         */
         function displayGameArea(){
             const startGameButtonDiv = document.getElementById('start-game-button');
             startGameButtonDiv.innerHTML = '';

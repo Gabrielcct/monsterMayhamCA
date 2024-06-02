@@ -10,7 +10,16 @@ const WebSocket = require('ws');
 // Map to store WebSocket connections for each game
 const gameConnections = {};
 // IMPORTS
-const { startNewGame, joinExistingGame, Turn, onTurnEndReset, games } = require('./game/gamesManager'); // Update the path if necessary
+const { 
+    startNewGame, 
+    joinExistingGame, 
+    Turn, 
+    onTurnEndReset, 
+    createUser,
+    handleUser,
+    games, 
+    playersHistory 
+} = require('./game/gamesManager'); // Update the path if necessary
 const { MONSTER_STATUS, MONSTER_TYPE} = require('./game/monsters');
 const {
     updateBoardAvailableMovement, 
@@ -20,6 +29,7 @@ const {
     onMonsterAttack,
     clearMonsterAvailableMovement
 } = require('./game/board');
+
 
 //const PORT = (3000); //use port 3000
 // either use port 3000 or process.argv[2] from command line specify
@@ -63,16 +73,63 @@ httpServer.on('upgrade', async (request, socket, head) => {
 });
 
 // SET UP ROUTES
+// entry
 app.get("/", (req, res) => {
-    res.render("index.ejs", { games } );
+    res.redirect('login');
 });
 
+app.get("/login", (req, res) => {
+    const error = req.session.error;
+    req.session.error = null; // Clear the error after passing it to the template
+    res.render("login.ejs", {error:error} );
+});
+
+app.post('/login', (req, res) => {
+    let isUser =handleUser(req.body.username, req.body.password);
+    if(isUser){
+        req.session.playerName = req.body.username;
+        res.redirect("index");
+    }else{
+        req.session.error = 'Login failed. Username or password is not correct.';
+        res.redirect('login')
+    }
+});
+
+app.get('/logout', (req, res) => {
+    req.logout(err => {
+        if (err) console.log(err);
+        res.redirect("/");
+    });
+});
+
+app.get('/register', (req, res) => {
+    const error = req.session.error;
+    req.session.error = null; // Clear the error after passing it to the template
+    res.render("register.ejs", {error:error});
+})
+
+app.post('/register', (req, res) => {
+    let isCreated = createUser(req.body.username, req.body.password);
+    if(isCreated){
+        res.redirect('login');
+    }else{
+        req.session.error = 'Registration failed. Username may already be taken.';
+        res.redirect('/register');
+    }
+});
+// index
+app.get("/index", (req, res) => {
+    const playerName = req.session.playerName;
+    req.session.playerName = null; // Clear the error after passing it to the template
+    res.render("index.ejs", { games, playersHistory, playerName } );
+});
+//game
 app.get("/game/:name/:playerName", (req, res) => {
     req.session.gameName = req.params.name; // save game name to session
     req.session.playerName = req.params.playerName; // save player name to session
     const playerName = req.session.playerName;
     const gameName = req.session.gameName;
-    res.render("game.ejs", { games, gameName, playerName, playerMonsters: games[gameName].players[playerName].monsters} );
+    res.render("game.ejs", { games, gameName, playerName, playerMonsters: games[gameName].players[playerName].monsters, playersHistory} );
 });
 
 // Route to get game data (including game name)
@@ -111,7 +168,7 @@ wsServer.on('connection', (ws, req) => {
                     ws.send(playerData);
                     playersData = JSON.stringify({ type: 'player-joined', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
                     sendToGamePlayers(data.gameName, playersData);
-                    everyoneData = JSON.stringify({ type: 'index-player-joined', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
+                    everyoneData = JSON.stringify({ type: 'index-player-joined', gameName: data.gameName, playerName: data.playerName, games: updatedGames ,playersHistory });
                     broadcastToAllClients(everyoneData, wsServer);
                     break;
             case 'join-game':
@@ -121,14 +178,14 @@ wsServer.on('connection', (ws, req) => {
                     ws.send(playerData);
                     playersData = JSON.stringify({ type: 'player-joined', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
                     sendToGamePlayers(data.gameName, playersData);
-                    everyoneData = JSON.stringify({ type: 'index-player-joined', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
+                    everyoneData = JSON.stringify({ type: 'index-player-joined', gameName: data.gameName, playerName: data.playerName, games: updatedGames, playersHistory });
                     broadcastToAllClients(everyoneData, wsServer);
                     break;
            case 'start-game':
                     updatedGames = Turn(games, data.gameName, data.playerName);
                     playerData = JSON.stringify({ type: 'current-game-started', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
                     sendToGamePlayers(data.gameName, playerData);
-                    everyoneData = JSON.stringify({ type: 'index-current-game-started', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
+                    everyoneData = JSON.stringify({ type: 'index-current-game-started', gameName: data.gameName, playerName: data.playerName, games: updatedGames, playersHistory });
                     broadcastToAllClients(everyoneData, wsServer);
                     break;
             case 'placing-monster':
@@ -185,6 +242,7 @@ wsServer.on('connection', (ws, req) => {
                     sendToGamePlayers(data.gameName, monsterAttackedData);
                     break;
             case 'game-over':
+                //playersHistory
                     break;    
             default: return;
         }

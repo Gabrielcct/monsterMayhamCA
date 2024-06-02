@@ -4,6 +4,7 @@ const url = "ws://localhost:3000";
 const wsServer = new WebSocket(url);
 
 let gamesList = {};
+
 // EVENTS
 // This will handle web socket messages (events)
 wsServer.onmessage = (event) => {
@@ -22,11 +23,11 @@ wsServer.onmessage = (event) => {
             break;
         case 'index-player-joined':
             // when player joins the game update game list
-            updateGamesList(data.games);
+            updateGamesList(data.games, data.playerHistory);
             break;
         case 'index-current-game-started':
             // when any of the games started update game list
-            updateGamesList(data.games);
+            updateGamesList(data.games, data.playerHistory);
             break;
         default: break;
     }
@@ -49,27 +50,27 @@ function startNewGame(){
         return;
     }
     // prompt player to enter name
-    const playerName = prompt("Enter player name:"); 
+   /* const playerName = prompt("Enter player name:"); 
     if(!playerName){
         alert("Player name can't be empty. Try again"); 
         return;
-    }
+    }*/
     const data = JSON.stringify({ type: 'start-new-game', gameName, playerName });
     wsServer.send(data); // send data to websocket
 }
 
 function joinGame(gameName, games){
     // prompt player to enter name
-    const playerName = prompt("Enter player name (must be unique):");
+   // const playerName = prompt("Enter player name (must be unique):");
     // if player name exist
     if(games[gameName].players && games[gameName].players[playerName]){
          alert("Player with that name already is in game. Player Name must be unique for game. Try again"); 
          return
     }
-    if(!playerName){
+    /*if(!playerName){
         alert("Player name can't be empty. Try again"); 
         return;
-    }
+    }*/
     const data = JSON.stringify({ type: 'join-game', gameName, playerName });
     wsServer.send(data); // send data to websocket
 }
@@ -119,9 +120,24 @@ function updateGamesList(games) {
     } else {
         playedGamesContainer.innerHTML = '<h2> No games currently in progress</h2>';
     }
+    updatePlayerHistoryView(playerName,playerHistory)
 }
 
-
+/**
+ * Update values in player history 
+ */
+function updatePlayerHistoryView(playerName,playerHistory){
+    const playerHistoryDiv = document.getElementById('player-history');
+    playerHistoryDiv.innerHTML = '';
+    playerHistoryDiv.innerHTML = `
+        <h2 class="welcome">Welcome ${playerName}</h2>
+        <div class="player-history">
+            <div class=" wins">Games played: <span> ${playersHistory[playerName].gamesPlayed}</span></div>
+            <div class=" wins">Wins: <span> ${playersHistory[playerName].wins}</span></div>
+            <div class=" wins">loses: <span> ${playersHistory[playerName].loses}</span></div>
+        </div>
+    `;
+}
 
 // HELPERS to TRACK WEB SOCKET SERVER STATUS
 wsServer.onopen = () => {

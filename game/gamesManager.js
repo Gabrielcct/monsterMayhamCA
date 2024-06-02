@@ -5,7 +5,33 @@ const {getStartingMonsters } = require('./monsters');
 const {createBoard} = require('./board');
 
 let games = {}; // hold all currently played gamse
+let playersHistory ={};
 
+//add some starting users
+playersHistory['Gabriel']={
+    gamesPlayed: 0,
+    wins: 0,
+    loses: 0,
+    password: '1234'
+}
+playersHistory['Marcus']={
+    gamesPlayed: 0,
+    wins: 0,
+    loses: 0,
+    password: '1234'
+}
+playersHistory['Test']={
+    gamesPlayed: 0,
+    wins: 0,
+    loses: 0,
+    password: '1234'
+}
+playersHistory['Adm']={
+    gamesPlayed: 0,
+    wins: 0,
+    loses: 0,
+    password: '1234'
+}
 /**
  * Start a new game.
  * This will create new player and add it to new game state object 
@@ -37,8 +63,10 @@ function startNewGame(gameName, playerName){
         currentPlayers: 1,
         isGameStarted: false,
         movingMonster: null,
-        round: 1
+        round: 1,
     }
+    // increase number of games player played
+    updatePlayersHistory(playerName);
     return games;
 }
 
@@ -75,6 +103,8 @@ function joinExistingGame(gameName, playerName){
         status: PLAYER_STATUS.waiting, // set initial status as waiting
         side: getPlayerSide(playerNumber) // Assign player to a side of the grid - first player to top side
     };
+    // increase number of games player played
+    updatePlayersHistory(playerName);
     // update current players
     games[gameName].currentPlayers++;
     return games;
@@ -158,13 +188,64 @@ function onTurnEndReset(games, gameName, playerName) {
     return games;
 }
 
+/**
+ * Updates player history.
+ * If player dont exist it will creat him and add him to history
+ * If player exists it will update his played games stats
+ * Player will be added either on game start or join game
+ * @param {*} playerName -- name of player
 
+ */
+function updatePlayersHistory(playerName) {
+    // add player to players history if is not already there
+    if(isPlayerAdded(playerName)){
+        // if is there update played games
+        playersHistory[playerName].gamesPlayed = playersHistory[playerName].gamesPlayed + 1; 
+    }
+}
 
+/**
+ * Function to check if player is already added to player history
+ * @param {*} playerName -- playe name
+ * @returns -- true if is added
+ */
+function isPlayerAdded(playerName) {
+    return playersHistory.hasOwnProperty(playerName);
+}
+
+function handleUser(username, password){
+    // check if player is in history 
+    if(isPlayerAdded(username)){
+        // if is he chaeck if password matches
+        if(playersHistory[username].password == password){
+            return true; 
+        }
+    } 
+    //else he cant
+    return false;
+}
+
+function createUser(username, password){
+    if(isPlayerAdded(username)){
+        return false;
+    }
+    // else create it
+    playersHistory[username] ={
+        gamesPlayed: 0,
+        wins: 0,
+        loses: 0,
+        password: password
+    } 
+    return true;
+}
 
 module.exports = { 
     startNewGame, 
     joinExistingGame, 
     Turn,
     onTurnEndReset,
-    games
+    createUser,
+    handleUser,
+    games,
+    playersHistory
 };

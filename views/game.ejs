@@ -23,7 +23,7 @@
             <button id="endTurn" class="btn btn-danger" onclick="endTurn('<%=gameName%>', '<%=playerName%>')">End Turn</button>
         </div>
         
-
+        <div id="monsters-info" class="monsters-info"></div>
         <div id="gameBoard" class="game-board">
             
             <% games[gameName].board.forEach((row, rowIndex) => { %>
@@ -41,6 +41,8 @@
 
     </div>
     <script src="/client.js"></script>
-    
+    <div id="surrender-button">
+        <button id="start-game" class="btn btn-danger" onclick="surrender('<%=gameName%>', '<%=playerName%>')">Surrender</button>
+    </div>
     
 <%- include("../partials/footer.ejs") -%>
