@@ -23,11 +23,11 @@ wsServer.onmessage = (event) => {
             break;
         case 'index-player-joined':
             // when player joins the game update game list
-            updateGamesList(data.games, data.playerHistory);
+            updateGamesList(data.games, data.playersHistory);
             break;
         case 'index-current-game-started':
             // when any of the games started update game list
-            updateGamesList(data.games, data.playerHistory);
+            updateGamesList(data.games, data.playersHistory);
             break;
         default: break;
     }
@@ -120,23 +120,28 @@ function updateGamesList(games) {
     } else {
         playedGamesContainer.innerHTML = '<h2> No games currently in progress</h2>';
     }
-    updatePlayerHistoryView(playerName,playerHistory)
+    if(playersHistory && playersHistory[playerName] && playerName){
+        updatePlayerHistoryView(playerName,playersHistory)
+    }
 }
 
 /**
  * Update values in player history 
  */
-function updatePlayerHistoryView(playerName,playerHistory){
-    const playerHistoryDiv = document.getElementById('player-history');
-    playerHistoryDiv.innerHTML = '';
-    playerHistoryDiv.innerHTML = `
-        <h2 class="welcome">Welcome ${playerName}</h2>
-        <div class="player-history">
-            <div class=" wins">Games played: <span> ${playersHistory[playerName].gamesPlayed}</span></div>
-            <div class=" wins">Wins: <span> ${playersHistory[playerName].wins}</span></div>
-            <div class=" wins">loses: <span> ${playersHistory[playerName].loses}</span></div>
-        </div>
-    `;
+function updatePlayerHistoryView(playerName,playersHistory){
+    if(Object.keys(playersHistory).length > 0 && playerName){
+        const playerHistoryDiv = document.getElementById('player-history');
+        playerHistoryDiv.innerHTML = '';
+        playerHistoryDiv.innerHTML = `
+            <h2 class="welcome">Welcome ${playerName}</h2>
+            <div class="player-history">
+                <div class=" wins">Games played: <span> ${playersHistory[playerName].gamesPlayed}</span></div>
+                <div class=" wins">Wins: <span> ${playersHistory[playerName].wins}</span></div>
+                <div class=" wins">loses: <span> ${playersHistory[playerName].loses}</span></div>
+            </div>
+        `;
+    }
+    
 }
 
 // HELPERS to TRACK WEB SOCKET SERVER STATUS

@@ -17,6 +17,8 @@ const {
     onTurnEndReset, 
     createUser,
     handleUser,
+    surrenderGame,
+    gameOver,
     games, 
     playersHistory 
 } = require('./game/gamesManager'); // Update the path if necessary
@@ -119,9 +121,11 @@ app.post('/register', (req, res) => {
 });
 // index
 app.get("/index", (req, res) => {
-    const playerName = req.session.playerName;
+    const updatedPlayersHistory = playersHistory; // Retrieve updated playersHistory from the imported module
+    const playerName = req.session.playerName || req.query.playerName; // Retrieve playerName from query parameter or session
     req.session.playerName = null; // Clear the error after passing it to the template
-    res.render("index.ejs", { games, playersHistory, playerName } );
+    req.session.updatedPlayersHistory = null; // Clear the error after passing it to the template
+    res.render("index.ejs", { games, playersHistory: updatedPlayersHistory, playerName } );
 });
 //game
 app.get("/game/:name/:playerName", (req, res) => {
@@ -129,7 +133,7 @@ app.get("/game/:name/:playerName", (req, res) => {
     req.session.playerName = req.params.playerName; // save player name to session
     const playerName = req.session.playerName;
     const gameName = req.session.gameName;
-    res.render("game.ejs", { games, gameName, playerName, playerMonsters: games[gameName].players[playerName].monsters, playersHistory} );
+    res.render("game.ejs", { games, gameName, playerName, playersHistory} );
 });
 
 // Route to get game data (including game name)
@@ -153,7 +157,7 @@ wsServer.on('connection', (ws, req) => {
     console.log(`A user connected to game ${gameName}`);
   
     // SEND INITIAL DATA to index
-    const initialData = JSON.stringify({ type: 'initial-data', games });
+    const initialData = JSON.stringify({ type: 'initial-data', games, playersHistory });
     ws.send(initialData);
     
     // HANDLE WEB SOCKET MESSAGES
@@ -166,9 +170,9 @@ wsServer.on('connection', (ws, req) => {
                     updatedGames = startNewGame(data.gameName, data.playerName);
                     playerData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
                     ws.send(playerData);
-                    playersData = JSON.stringify({ type: 'player-joined', gameName: data.gameName, playerName: data.playerName, games: updatedGames });
+                    playersData = JSON.stringify({ type: 'player-joined', gameName: data.gameName,  games: updatedGames });
                     sendToGamePlayers(data.gameName, playersData);
-                    everyoneData = JSON.stringify({ type: 'index-player-joined', gameName: data.gameName, playerName: data.playerName, games: updatedGames ,playersHistory });
+                    everyoneData = JSON.stringify({ type: 'index-player-joined', gameName: data.gameName,  games: updatedGames ,playersHistory });
                     broadcastToAllClients(everyoneData, wsServer);
                     break;
             case 'join-game':
@@ -176,16 +180,16 @@ wsServer.on('connection', (ws, req) => {
                     // send that new game started and game name
                     playerData = JSON.stringify({ type: 'joined-game', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
                     ws.send(playerData);
-                    playersData = JSON.stringify({ type: 'player-joined', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
+                    playersData = JSON.stringify({ type: 'player-joined', gameName: data.gameName, games:updatedGames });
                     sendToGamePlayers(data.gameName, playersData);
-                    everyoneData = JSON.stringify({ type: 'index-player-joined', gameName: data.gameName, playerName: data.playerName, games: updatedGames, playersHistory });
+                    everyoneData = JSON.stringify({ type: 'index-player-joined', gameName: data.gameName, games: updatedGames, playersHistory });
                     broadcastToAllClients(everyoneData, wsServer);
                     break;
            case 'start-game':
                     updatedGames = Turn(games, data.gameName, data.playerName);
-                    playerData = JSON.stringify({ type: 'current-game-started', gameName: data.gameName, playerName: data.playerName, games:updatedGames });
+                    playerData = JSON.stringify({ type: 'current-game-started', gameName: data.gameName, games:updatedGames });
                     sendToGamePlayers(data.gameName, playerData);
-                    everyoneData = JSON.stringify({ type: 'index-current-game-started', gameName: data.gameName, playerName: data.playerName, games: updatedGames, playersHistory });
+                    everyoneData = JSON.stringify({ type: 'index-current-game-started', gameName: data.gameName, games: updatedGames, playersHistory });
                     broadcastToAllClients(everyoneData, wsServer);
                     break;
             case 'placing-monster':
@@ -206,7 +210,7 @@ wsServer.on('connection', (ws, req) => {
                     break;
             case 'add-monster':
                     const returnedGames = addMonsterToBoard(games, data.gameName, data.playerName, data.row, data.col, data.monster);
-                    const addingMonsterData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:returnedGames, isAddingMonster:false, isMovingMonster:false });
+                    const addingMonsterData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, games:returnedGames, isAddingMonster:false, isMovingMonster:false });
                     // send to all game players
                     sendToGamePlayers(data.gameName, addingMonsterData);
                     // cancel placing monster for user
@@ -219,13 +223,13 @@ wsServer.on('connection', (ws, req) => {
                         row: data.row,
                         col: data.col, 
                     }
-                    const monsterClickedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:monsterClickedGames, isAddingMonster:false, isMovingMonster:true, movingMonster });
+                    const monsterClickedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, games:monsterClickedGames, isAddingMonster:false, isMovingMonster:true, movingMonster });
                     ws.send(monsterClickedData);
                     break;
             case 'monster-moved':
                     const movedMonster = null;
                     const monsterMovedGames = updateBoardMonsterMoved(games, data.gameName, data.playerName, data.row, data.col);
-                    const monsterMovedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:monsterMovedGames, isAddingMonster:false, isMovingMonster:false, movingMonster:movedMonster });
+                    const monsterMovedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, games:monsterMovedGames, isAddingMonster:false, isMovingMonster:false, movingMonster:movedMonster });
                     //ws.send(monsterMovedData);
                     // send to all game players
                     sendToGamePlayers(data.gameName, monsterMovedData);
@@ -233,17 +237,28 @@ wsServer.on('connection', (ws, req) => {
             case 'end-turn':
                     let tempGames = Turn(games, data.gameName, data.playerName);
                     const endTurnGames = onTurnEndReset(tempGames, data.gameName, data.playerName)
-                    const endTurnData = JSON.stringify({ type: 'turn', gameName: data.gameName, playerName: data.playerName, games:endTurnGames, isAddingMonster:false, isMovingMonster:false });
+                    const endTurnData = JSON.stringify({ type: 'turn', gameName: data.gameName, games:endTurnGames, isAddingMonster:false, isMovingMonster:false });
                     sendToGamePlayers(data.gameName, endTurnData);
                     break;
             case 'monster-attacked':
                     const monsterAttackedUpdatedGames = onMonsterAttack(games, data.gameName, data.playerName, data.row, data.col, data.monster, data.movingMonster);
-                    const monsterAttackedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, playerName: data.playerName, games:monsterAttackedUpdatedGames, isAddingMonster:false, isMovingMonster:false });
+                    const monsterAttackedData = JSON.stringify({ type: 'updated-board', gameName: data.gameName, games:monsterAttackedUpdatedGames, isAddingMonster:false, isMovingMonster:false });
                     sendToGamePlayers(data.gameName, monsterAttackedData);
                     break;
-            case 'game-over':
-                //playersHistory
+            case 'surrender':
+                    const surrenderedGame = surrenderGame(games, data.gameName, data.playerName);
+                    if(surrenderedGame[data.gameName].isGameOver){
+                        sendToGamePlayers(data.gameName, JSON.stringify({ type: 'game-over',  gameName: data.gameName,  games:surrenderedGame, playersHistory}));
+                    } else{
+                        sendToGamePlayers(data.gameName, JSON.stringify({ type: 'player-surrender',  gameName: data.gameName,  games:surrenderedGame, playersHistory}));
+                    }
                     break;    
+            case 'player-lost':
+                    gameOver(games, data.gameName, data.playerName, false);
+                    break;
+            case 'player-won':  
+                    gameOver(games, data.gameName, data.playerName, true);
+                    break;  
             default: return;
         }
     });

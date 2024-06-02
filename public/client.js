@@ -37,8 +37,8 @@ fetch('/game-data')
                 case 'current-game-started':
                     games = data.games; 
                     displayGameArea();
-                    if (data.games[data.gameName] && data.games[data.gameName].players[data.playerName]) {
-                        const monsters = data.games[data.gameName].players[data.playerName].monsters;
+                    if (data.games[data.gameName] && data.games[data.gameName].players[playerName]) {
+                        const monsters = data.games[data.gameName].players[playerName].monsters;
                         if (monsters) { 
                             updateMonstersDiv(monsters);
                         }
@@ -73,6 +73,36 @@ fetch('/game-data')
                     createBoard(data.games[data.gameName].board); // update game board is updated with new data.board
                     const playerListHTML3 = updatePlayerList(data.games, data.gameName);
                     document.getElementById('player-list').innerHTML = `<ul>${playerListHTML3}</ul>`;
+                    break;
+                case 'player-surrender':
+                    alert('Player has left the game!');
+                    games = data.games; 
+                    createBoard(data.games[data.gameName].board); // update game board is updated with new data.board   
+                    // update player list
+                    const playerListHTML5 = updatePlayerList(data.games, data.gameName);
+                    document.getElementById('player-list').innerHTML = `<ul>${playerListHTML5}</ul>`;
+                    break;
+                case 'game-over':
+                        alert('Game over');
+                        
+                        games = data.games; 
+                        console.log(playerName)
+                        console.log(games[data.gameName].players)
+                        if (games[data.gameName] && games[data.gameName].players && games[data.gameName].players.hasOwnProperty(playerName)) {
+                            alert('Congratulations! You won!');
+                            // Send data to the WebSocket server to update user details
+                            const data = JSON.stringify({ type: 'player-won', gameName, playerName });
+                            wsServer.send(data); 
+                            //redirect to index --- ASSISTED by AI (chatgpt)
+                            window.location.href = '/index?playerName=' + encodeURIComponent(playerName); // Pass playerName as query parameter
+                        }else{
+                            alert('Unfortunately you lose');
+                            // Send data to the WebSocket server to update user details
+                            const data = JSON.stringify({ type: 'player-lost', gameName, playerName });
+                            wsServer.send(data); 
+                             //redirect to index --- ASSISTED by AI (chatgpt)
+                             window.location.href = '/index?playerName=' + encodeURIComponent(playerName); // Pass playerName as query parameter
+                        }
                     break;
                 default: break;
             }
@@ -126,6 +156,10 @@ fetch('/game-data')
          * @param {*} playerName - current player name
          */
         window.surrender = function (gameName,playerName){
+            if (games[gameName].players[playerName].status == 'waiting') {
+                alert("It's not your turn!");
+                return; // Exit the function if it's not the current player's turn
+            }
             // ask to confirm surrender
             //Reference: https://stackoverflow.com/questions/9334636/how-to-create-a-dialog-with-ok-and-cancel-options
             const isSurrender = confirm("Are you sure you want to surrender? Game will end and you will lose.");
@@ -289,12 +323,12 @@ fetch('/game-data')
             // append monster information
             const availableMonstersDiv = createElement('div', 'available-monsters', null, null);
             availableMonstersDiv.innerHTML = ''; // clear content
-            const monsterInfoDiv = document.getElementById('monsters-info');
+            /*const monsterInfoDiv = document.getElementById('monsters-info');
             
             const availableMonstersLabel = createElement('span', 'available-monsters-label', 'Available monsters to place: ');
             availableMonstersDiv.appendChild(availableMonstersLabel);
             availableMonstersDiv.appendChild(document.createTextNode(availableMonsters));
-            monsterInfoDiv.appendChild(availableMonstersDiv)
+            monsterInfoDiv.appendChild(availableMonstersDiv)*/
         }
         /**
          * On place monster clicked

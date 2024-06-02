@@ -364,6 +364,26 @@ function onMonsterAttack(games, gameName, playerName, row, col, monster, movingM
     return games;
 }
 
+/**
+ * Remove all player figures after he left game
+ */
+function updateBoardAfterPlayerLeft(games, gameName, playerName){
+    let gameBoard = games[gameName].board;
+    let playerClass = `player-${games[gameName].players[playerName].id}`;
+
+    // Iterate through the board and remove all cells related to the player
+    for (let i = 0; i < gameBoard.length; i++) {
+        for (let j = 0; j < gameBoard[i].length; j++) {
+            if (gameBoard[i][j] && gameBoard[i][j].class && gameBoard[i][j].class.includes(playerClass)) {
+                gameBoard[i][j] = null;
+            }
+        }
+    }
+    // Update the game state
+    games[gameName].board = gameBoard;
+    return games;
+}
+
 // Reference https://www.sitepoint.com/understanding-module-exports-exports-node-js/
 module.exports = { 
     createBoard, 
@@ -372,5 +392,6 @@ module.exports = {
     addMonsterToBoard ,
     updateBoardMonsterClicked,
     updateBoardMonsterMoved,
+    updateBoardAfterPlayerLeft,
     onMonsterAttack
 };

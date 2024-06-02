@@ -1,10 +1,11 @@
 <%- include("../partials/head.ejs") -%>
 
+<% if(playerName) { %>
+<h2 class="welcome">Welcome <%= playerName %></h2>
+<% } %>
 <!-- check if there is player history object-->
 <% if(playersHistory) { %>
     <% if (Object.keys(playersHistory).length > 0 && playerName) { %>
-        
-        <h2 class="welcome">Welcome <%= playerName %></h2>
         <div id="player-history" class="player-history">
             <div class=" wins">Games played: <span><%= playersHistory[playerName].gamesPlayed %></span></div>
             <div class=" wins">Wins: <span><%= playersHistory[playerName].wins %></span></div>
@@ -70,5 +71,6 @@
 <script>
     // add playername to client-index
     const playerName = "<%= playerName %>";
+    const playersHistory = "<%= playersHistory %>";
 </script>
 <%- include("../partials/footer.ejs") -%>

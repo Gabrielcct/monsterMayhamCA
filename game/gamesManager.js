@@ -2,7 +2,7 @@
 // IMPORTS
 const {PLAYER_SIDES, PLAYER_STATUS} = require('./player');
 const {getStartingMonsters } = require('./monsters');
-const {createBoard} = require('./board');
+const {createBoard, updateBoardAfterPlayerLeft } = require('./board');
 
 let games = {}; // hold all currently played gamse
 let playersHistory ={};
@@ -64,6 +64,7 @@ function startNewGame(gameName, playerName){
         isGameStarted: false,
         movingMonster: null,
         round: 1,
+        isGameOver: false
     }
     // increase number of games player played
     updatePlayersHistory(playerName);
@@ -239,6 +240,68 @@ function createUser(username, password){
     return true;
 }
 
+/**
+ * Function to surrender game
+ * @param {*} games 
+ * @param {*} gameName 
+ * @param {*} playerName 
+ */
+function surrenderGame(games, gameName, playerName){
+    // update player statistic
+    if(playersHistory && playersHistory[playerName] ){
+        playersHistory[playerName].loses = playersHistory[playerName].loses +1;
+    }
+    // update board
+    games = updateBoardAfterPlayerLeft(games, gameName, playerName);
+    // remove player from game
+    if (games[gameName] && games[gameName].players && games[gameName].players[playerName]) {
+        delete games[gameName].players[playerName];
+    }
+    // if it is only one player left end game
+    console.log(getNumberOfPlayers(games, gameName))
+    if( getNumberOfPlayers(games, gameName) < 2){
+        games[gameName].isGameOver = true;
+        games[gameName].isGameStarted = false;
+    }
+    return games;
+}
+
+/**
+ * Get current number of players
+ * @param {*} games 
+ * @param {*} gameName 
+ * @returns 
+ */
+function getNumberOfPlayers(games, gameName) {
+    if (games[gameName] && games[gameName].players) {
+        return Object.keys(games[gameName].players).length;
+    }
+    return 0; // Return 0 if the game or players object does not exist
+}
+
+/**
+ * When game finishes clear all data and update players history
+ * @param {*} games 
+ * @param {*} gameName 
+ * @param {*} playerName 
+ * @param {*} isWon 
+ */
+function gameOver(games, gameName, playerName, isWon){
+    // update player history
+    if(playersHistory && playersHistory[playerName] ){
+        if(isWon){
+            playersHistory[playerName].wins = playersHistory[playerName].wins +1;
+        }else{
+            playersHistory[playerName].loses = playersHistory[playerName].loses +1;
+        }
+        playersHistory[playerName].gamesPlayed = playersHistory[playerName].gamesPlayed || 1;
+    }
+    // remove game from played games
+    if(games[gameName]){
+        delete games[gameName];
+    }
+}
+
 module.exports = { 
     startNewGame, 
     joinExistingGame, 
@@ -246,6 +309,8 @@ module.exports = {
     onTurnEndReset,
     createUser,
     handleUser,
+    surrenderGame,
+    gameOver,
     games,
     playersHistory
 };
