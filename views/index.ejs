@@ -1,8 +1,15 @@
 <%- include("../partials/head.ejs") -%>
 
-<% if(playerName) { %>
-<h2 class="welcome">Welcome <%= playerName %></h2>
-<% } %>
+<div class="player-name-container" id="player-name-container">
+    <% if(playerName) { %>
+        <h2 class="welcome">Welcome <%= playerName %></h2>
+    <% } %>
+    <form action="/logout" class="logout-form" method="post">
+        <div class="form-row form-button">
+            <button id="logout" class="btn btn-primary logout-button" type="submit" >Logout</button>
+        </div>
+    </form>
+</div>
 <!-- check if there is player history object-->
 <% if(playersHistory) { %>
     <% if (Object.keys(playersHistory).length > 0 && playerName) { %>

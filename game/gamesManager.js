@@ -184,9 +184,64 @@ function onTurnEndReset(games, gameName, playerName) {
             }
         }
     }
+    // chack if game is over -- game is over if only one player is returned
+    let winner = checkIfGameIsOver(games, gameName);
+    console.log(winner)
+    if(winner){
+        // set the game over
+        games[gameName].isGameOver = true;
+        games[gameName].isGameStarted = false;
+        // remove all other players from game except winner
+        // find losers
+        const losers = Object.keys(games[gameName].players).filter(player => player !== winner);
+        if(losers){
+            // remove losers
+            for (let player of losers) {
+                delete games[gameName].players[player];
+            }
+        }
+    }
 
     // Return the updated game object
     return games;
+}
+
+function checkIfGameIsOver(games, gameName){
+    const game = games[gameName];
+    if (!game) {
+        throw new Error("Game not found");
+    }
+
+    let players = Object.keys(game.players);
+    let playerWithMonsters = null;
+
+    /// Reference :  Generated with AI (chatGPT)
+    for (let playerName of players) {
+        let player = game.players[playerName];
+        let hasMonstersOnBoard = false;
+        let hasMonstersToPlace = player.availableMonsters > 0;
+
+        for (let row of game.board) {
+            for (let cell of row) {
+                if (cell && cell.player === playerName) {
+                    hasMonstersOnBoard = true;
+                    break;
+                }
+            }
+            if (hasMonstersOnBoard) {
+                break;
+            }
+        }
+
+        if (hasMonstersOnBoard || hasMonstersToPlace) {
+            if (playerWithMonsters) {
+                return null; // More than one player has monsters
+            }
+            playerWithMonsters = playerName;
+        }
+    }
+
+    return playerWithMonsters; // If only one player has monsters, return their name
 }
 
 /**
@@ -248,9 +303,9 @@ function createUser(username, password){
  */
 function surrenderGame(games, gameName, playerName){
     // update player statistic
-    if(playersHistory && playersHistory[playerName] ){
+    /*if(playersHistory && playersHistory[playerName] ){
         playersHistory[playerName].loses = playersHistory[playerName].loses +1;
-    }
+    }*/
     // update board
     games = updateBoardAfterPlayerLeft(games, gameName, playerName);
     // remove player from game
@@ -258,7 +313,6 @@ function surrenderGame(games, gameName, playerName){
         delete games[gameName].players[playerName];
     }
     // if it is only one player left end game
-    console.log(getNumberOfPlayers(games, gameName))
     if( getNumberOfPlayers(games, gameName) < 2){
         games[gameName].isGameOver = true;
         games[gameName].isGameStarted = false;

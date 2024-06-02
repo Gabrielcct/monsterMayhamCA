@@ -97,11 +97,8 @@ app.post('/login', (req, res) => {
     }
 });
 
-app.get('/logout', (req, res) => {
-    req.logout(err => {
-        if (err) console.log(err);
-        res.redirect("/");
-    });
+app.post('/logout', (req, res) => {
+    res.redirect('login');
 });
 
 app.get('/register', (req, res) => {
@@ -122,7 +119,7 @@ app.post('/register', (req, res) => {
 // index
 app.get("/index", (req, res) => {
     const updatedPlayersHistory = playersHistory; // Retrieve updated playersHistory from the imported module
-    const playerName = req.session.playerName || req.query.playerName; // Retrieve playerName from query parameter or session
+    const playerName = req.query.playerName || req.session.playerName; // Retrieve playerName from query parameter or session
     req.session.playerName = null; // Clear the error after passing it to the template
     req.session.updatedPlayersHistory = null; // Clear the error after passing it to the template
     res.render("index.ejs", { games, playersHistory: updatedPlayersHistory, playerName } );
@@ -133,7 +130,8 @@ app.get("/game/:name/:playerName", (req, res) => {
     req.session.playerName = req.params.playerName; // save player name to session
     const playerName = req.session.playerName;
     const gameName = req.session.gameName;
-    res.render("game.ejs", { games, gameName, playerName, playersHistory} );
+    const playerClass= `player-${games[gameName].players[playerName].id}`;
+    res.render("game.ejs", { games, gameName, playerName, playersHistory, playerClass: playerClass} );
 });
 
 // Route to get game data (including game name)
@@ -141,8 +139,9 @@ app.get('/game-data', (req, res) => {
     // Retrieve the game name from the session
     const gameName = req.session.gameName;
     const playerName = req.session.playerName;
+    const playerClass = `player-${games[gameName].players[playerName].id}`;
    // Send the game name in the response
-    res.json({ gameName, playerName, games });
+    res.json({ gameName, playerName, games, playerClass });
 });
 
 let updatedGames; // will hold updated hames object
@@ -236,9 +235,14 @@ wsServer.on('connection', (ws, req) => {
                     break;
             case 'end-turn':
                     let tempGames = Turn(games, data.gameName, data.playerName);
-                    const endTurnGames = onTurnEndReset(tempGames, data.gameName, data.playerName)
+                    const endTurnGames = onTurnEndReset(tempGames, data.gameName, data.playerName);
                     const endTurnData = JSON.stringify({ type: 'turn', gameName: data.gameName, games:endTurnGames, isAddingMonster:false, isMovingMonster:false });
                     sendToGamePlayers(data.gameName, endTurnData);
+                    // if gmae over send to all players
+                    if(endTurnGames[gameName].isGameOver){
+                        sendToGamePlayers(data.gameName, JSON.stringify({ type: 'game-over',  gameName: data.gameName,  games:endTurnGames, playersHistory}));
+                    }
+                    
                     break;
             case 'monster-attacked':
                     const monsterAttackedUpdatedGames = onMonsterAttack(games, data.gameName, data.playerName, data.row, data.col, data.monster, data.movingMonster);

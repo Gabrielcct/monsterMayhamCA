@@ -161,6 +161,9 @@ body {
 
 h2{
     text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 .capitalise{
     text-transform: capitalize;
@@ -233,4 +236,21 @@ input{
     font-size: 18px;
     color: #4e8ddf;
     font-family: fantasy;
+}
+
+.player-color{
+    height: 21px;
+    width: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 15px;
+}
+.logout-form{
+    position: fixed;
+    top: 67px;
+    right: 0px;
+}
+.logout-button{
+    border:1px solid white;
 }

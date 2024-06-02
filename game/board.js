@@ -178,6 +178,7 @@ function monsterAvailableMovement(games, gameName, playerName, row, col) {
     let gameBoard = games[gameName].board;
     let playerId = games[gameName].players[playerName].id;
 
+    /// Reference :  Generated with AI (chatGPT)
     function isInBounds(r, c) {
         return r >= 0 && r < gameBoard.length && c >= 0 && gameBoard[r] && c < gameBoard[r].length;
     }
@@ -188,6 +189,7 @@ function monsterAvailableMovement(games, gameName, playerName, row, col) {
     
     // Check horizontal and vertical movements
     // Check horizontal movements
+    /// Reference :  Generated with AI (chatGPT)
     for (let i = 0; i < gameBoard.length; i++) {
         if (isCellEmpty(i, col)) {
             gameBoard[i][col] = {
@@ -198,6 +200,7 @@ function monsterAvailableMovement(games, gameName, playerName, row, col) {
     }
 
     // Check vertical movements
+    /// Reference :  Generated with AI (chatGPT)
     for (let j = 0; j < gameBoard[row].length; j++) {
         if (isCellEmpty(row, j)) {
             gameBoard[row][j] = {
@@ -215,6 +218,7 @@ function monsterAvailableMovement(games, gameName, playerName, row, col) {
     row = parseInt(row); 
     col = parseInt(col); 
 
+    /// Reference :  Generated with AI (chatGPT)
     // check for all directions
     for (let [dr, dc] of directions) {
         // Parse dr as an integer
